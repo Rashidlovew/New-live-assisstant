@@ -27,9 +27,10 @@ field_order = [
     "Examination", "Outcomes", "TechincalOpinion"
 ]
 
+# Modified field_prompts
 field_prompts = {
-    "Date": "🎙️ أرسل تاريخ الواقعة.",
-    "Briefing": "🎙️ أرسل موجز الواقعة.",
+    "Date": "🎙️ لنبدأ بالتاريخ، متى وقع الحادث تقريبًا؟",
+    "Briefing": "🎙️ شكرًا لك. والآن، هل يمكنك أن تعطيني موجزًا لما حدث؟",
     "LocationObservations": "🎙️ أرسل معاينة الموقع حيث بمعاينة موقع الحادث تبين ما يلي .....",
     "Examination": "🎙️ أرسل نتيجة الفحص الفني ... حيث بفحص موضوع الحادث تبين ما يلي .....",
     "Outcomes": "🎙️ أرسل النتيجة حيث أنه بعد المعاينة و أجراء الفحوص الفنية اللازمة تبين ما يلي:.",
@@ -38,23 +39,38 @@ field_prompts = {
 
 sessions = {}
 
+# Heavily revised system_prompt
 system_prompt = (
-    "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود ومتعاطف."
-    " وظيفتك هي إجراء محادثة طبيعية لجمع معلومات لتقرير فني. لا تجعلي المستخدم يشعر كأنه يملأ استمارة."
-    " لكل معلومة يقدمها المستخدم (مثلاً عن 'التاريخ')، ابدئي ردك بتأكيد موجز وطبيعي لهذه المعلومة (مثلاً: 'حسنًا، تاريخ الواقعة هو [التاريخ الذي ذكره المستخدم].')."
-    " بعد ذلك، إذا كانت إجابة المستخدم عن الحقل الحالي مختصرة جدًا أو غير واضحة، اطرحي سؤال متابعة مفتوح لتستوضحي أكثر عن نفس الحقل قبل الانتقال لطلب معلومات عن الحقل التالي."
-    " إذا كانت المعلومة واضحة، انتقلي بسلاسة لطلب المعلومة التالية حسب الترتيب المحدد."
-    " استخدمي انتقالات عبورية لطيفة بين المواضيع المختلفة للتقرير."
-    " هدفك هو جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
-    " عندما يتم جمع كل الحقول بنجاح، قومي بتأكيد استلام المعلومة الأخيرة ثم أعلني بشكل واضح عن اكتمال جمع البيانات وأن التقرير سيتم إعداده (مثلاً: 'شكرًا لك، هذه هي كل المعلومات المطلوبة. ✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...')."
-    " تذكري أن تستخدمي هذه التعليمات في كل رد."
+    "أنتِ مساعد AI متخصص في قسم الهندسة الجنائية، صوتك طبيعي ودافئ، وأسلوبك يجمع بين المهنية والتعاطف العميق."
+    " مهمتك الأساسية هي مساعدة المستخدم في تقديم معلومات لتقرير فني، ولكن الأهم من ذلك هو أن يشعر المستخدم بالدعم والراحة خلال هذه العملية."
+
+    "**بدء المحادثة:**"
+    "ابدئي المحادثة بتحية ودية ومبادرة إنسانية بسيطة. على سبيل المثال: 'مرحباً بك، أنا هنا لمساعدتك في إعداد تقريرك. قبل أن نبدأ في التفاصيل، كيف حالك اليوم؟' أو 'أهلاً بك، أفهم أنك بحاجة لتقديم معلومات لتقرير. أود أن أطمئن عليك أولاً، أتمنى أن تكون بخير.' انتظري رد المستخدم على هذا المدخل الأولي، وتفاعلي معه بشكل مناسب ومختصر."
+    "بعد هذا التفاعل الأولي، انتقلي لطلب أول معلومة بشكل سلس, وهي تاريخ الحادث, مستخدمة كنقطة انطلاق \"لنبدأ بالتاريخ، متى وقع الحادث تقريبًا؟\" ولكن بصياغتك الطبيعية."
+
+    "**جمع المعلومات:**"
+    "عندما يحين وقت جمع المعلومات، تجنبي تمامًا أسلوب طرح الأسئلة المباشرة والمتتالية كأنكِ تملئين قائمة. هدفك هو أن تدمجي طلب المعلومات ضمن حوار طبيعي ومتدفق."
+    "لكل معلومة يقدمها المستخدم (مثلاً عن 'التاريخ'):"
+    "1. قدمي إقرارًا واضحًا وموجزًا بما قاله المستخدم (مثلاً: 'حسنًا، تاريخ الواقعة هو [التاريخ الذي ذكره المستخدم].')."
+    "2. إذا كانت إجابته مختصرة جدًا أو غير واضحة، اطرحي سؤال متابعة مفتوح لتستوضحي أكثر عن *نفس النقطة* قبل الانتقال (مثلاً: 'هل يمكنك توضيح هذه النقطة أكثر قليلاً؟')."
+    "3. إذا كانت المعلومة واضحة، أو بعد الاستيضاح، قدمي تعليقًا قصيرًا يُظهر التعاطف أو الاهتمام (مثلاً: 'شكرًا لك على توضيح ذلك.' أو 'أتفهم أن تذكر هذه التفاصيل قد يكون صعبًا.') ثم انتقلي بلطف لطلب المعلومة التالية."
+    "مثال للانتقال: 'شكرًا لمشاركتنا هذه المعلومة. عندما تكون مستعدًا، هل يمكننا التحدث قليلاً عن [اسم الحقل التالي بصيغة طبيعية، مثلاً \"ملخص الحادث\" بدلاً من Briefing]؟' أو 'أتفهم. الآن، إذا سمحت، ننتقل إلى [اسم الحقل التالي بصيغة طبيعية].'"
+    "عند طلب معلومة جديدة، استخدمي نص السؤال من `field_prompts` كدليل للمعنى المطلوب ولكن أعيدي صياغته بأسلوبك الحواري الطبيعي بدلاً من ترديده حرفياً."
+
+    "**الأسلوب العام:**"
+    "حافظي على هدوئك وصبرك طوال المحادثة. شجعي المستخدم على التحدث بحرية، وأكدي له أن بإمكانه أخذ وقته."
+    "تذكري، أنتِ لستِ مجرد آلة لجمع البيانات، بل مساعد متعاطف. يجب أن يشعر المستخدم أنه يتحدث مع شخص يهتم به حقًا."
+    "يجب جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
+    "عندما يتم جمع كل الحقول بنجاح، قومي بتأكيد استلام المعلومة الأخيرة، ثم أعلني بشكل واضح وودي عن اكتمال جمع البيانات وأن التقرير سيتم إعداده (مثلاً: 'شكرًا جزيلاً لك على كل هذه المعلومات. ✅ لقد تم استلام جميع البيانات اللازمة. سأقوم الآن بإعداد التقرير لك...')."
+    "استخدمي هذه التعليمات في كل رد من ردودك لضمان تجربة سلسة وداعمة للمستخدم."
 )
+
 
 def generate_response(messages):
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        temperature=0.6
+        temperature=0.7 # Slightly increased temperature for more conversational variance
     )
     return response.choices[0].message.content
 
@@ -96,41 +112,131 @@ def chat():
             "fields": {},
             "current": 0
         }
+        # For the very first message from the user (which is likely just an initial sound or empty),
+        # the AI should respond with its initial greeting as per system_prompt.
+        # We'll add the user's first message, then let generate_response craft the initial greeting.
+        if not user_message: # Handle case where first user message might be empty if recording starts immediately
+            user_message = "(بدأ المستخدم المحادثة)"
+
 
     session = sessions[user_id]
     messages = session["messages"]
 
     messages.append({"role": "user", "content": user_message})
 
+    # Only store data if it's not the initial greeting phase.
+    # The system_prompt asks the AI to have an initial exchange BEFORE asking for the first field.
+    # So, `session["current"]` will be 0 when the AI is supposed to ask for "Date".
+    # User's response to "Date" will be when `session["current"]` is 0.
+    # This logic for storing fields seems okay, assuming the AI handles the initial interaction
+    # and then asks for "Date", and the user's response to that is what gets stored.
     if session["current"] < len(field_order):
-        current_field_key = field_order[session["current"]]
-        session["fields"][current_field_key] = user_message
+        # If the AI's last message was asking for a field, then this user_message is the answer.
+        # This assumes the AI will not ask for a field during its initial greeting phase.
+        # The system_prompt guides the AI to ask for "Date" *after* the initial exchange.
+        # We need to ensure we don't store the user's response to "how are you?" as the "Date".
+
+        # Heuristic: Check if the conversation history suggests a field was just asked.
+        # This is getting complex. A simpler way: the AI must be guided by system_prompt.
+        # If session["messages"] has more than just system and first user message, it means a field might have been asked.
+
+        # Let's rely on the AI. If it's not asking for a field, it shouldn't be stored.
+        # The `session["current"]` update logic below is key.
+        # The user's response to the initial "how are you" should not result in `session["current"]` incrementing.
+
+        # The current logic for incrementing `session["current"]` is:
+        # - if session["current"] < len(field_order) - 1: session["current"] += 1
+        # - elif session["current"] == len(field_order) - 1: session["current"] += 1
+        # This means `session["current"]` increments *after* the LLM reply is generated.
+        # The LLM reply is generated *after* the user message is appended.
+
+        # If it's the very first *actual* user message (e.g. "I'm fine, thanks"),
+        # the LLM should respond, and `session["current"]` should remain 0.
+        # Only when the user provides the "Date" should `session["current"]` effectively prepare to move to 1.
+
+        # The current logic for storing `session["fields"][current_field_key] = user_message`
+        # happens *before* `reply_content` is generated and *before* `session["current"]` is incremented.
+        # This means the user's response to "How are you?" could be stored in `session["fields"]["Date"]`
+        # if `session["current"]` is 0. This needs adjustment.
+
+        # Solution: We only store if the AI's *previous* message likely prompted for the current field.
+        # Or, more simply, we only store if `messages` is beyond the initial greeting phase.
+        # The system_prompt now asks AI to engage first, then request "Date".
+        # So, the first user message is a reply to greeting. Second user message is the Date.
+
+        # Store if messages length > 3 (system, user_greeting_reply, assistant_asks_for_date)
+        # This means current user_message is an answer to a field.
+        is_initial_greeting_phase = True
+        if len(messages) > 3: # System, User (empty/greeting), Assistant (greeting), User (reply to greeting) ... now assistant asks for Date
+             is_initial_greeting_phase = False
+
+        if not is_initial_greeting_phase:
+            current_field_key = field_order[session["current"]]
+            session["fields"][current_field_key] = user_message
+            # Log what's being stored for debugging
+            print(f"Storing user_message='{user_message}' for field='{current_field_key}' at index={session['current']}")
+
 
     reply_content = generate_response(messages)
 
-    # Advance session["current"] if the LLM is expected to have moved on.
-    # The system_prompt guides the LLM to ask for follow-ups on the *same* field if unclear.
-    # If the LLM is satisfied, it moves to the next field or concludes.
-    # We increment `session["current"]` to reflect the next field the user should be providing,
-    # or to mark completion.
-    # This happens *after* the user provides data for the current `session["current"]` index,
-    # and *after* the LLM generates a response based on that.
-    # The new `session["current"]` is what the *next* user message will be for.
+    # Determine if the AI is likely asking for a new field or has finished.
+    # This logic helps advance `session["current"]` so the *next* user message is associated with the correct field.
+    # This happens *after* the AI has responded.
 
-    # Heuristic: if the LLM's reply does not seem to be a clarifying question about the field
-    # we just collected data for, then we can assume it's time to move to the next field index.
-    # For now, we will increment if the current field (before increment) is not the last one.
-    # This relies heavily on the LLM following the prompt to ask for the next field in sequence.
-    if session["current"] < len(field_order) - 1:
-        # We've processed data for field `session["current"]`. If it's not the last field,
-        # the LLM *should* be asking for `session["current"] + 1`. So, update `session["current"]`
-        # to reflect that the *next* user input is for this new index.
-        session["current"] += 1
-    elif session["current"] == len(field_order) - 1:
-        # We've processed data for the *last* field.
-        # The LLM *should* be generating a concluding message.
-        # Increment `session["current"]` to mark that all fields are done.
-        session["current"] += 1 # Now session["current"] == len(field_order)
+    # If the AI's last message was its initial greeting, `session["current"]` should not advance.
+    # If the AI just asked for "Date", `session["current"]` should still be 0 (pointing to "Date").
+    # After user provides "Date", and AI acknowledges and asks for "Briefing", then `session["current"]` should advance to 1.
+
+    # The crucial part from system_prompt:
+    # "After this TEPID_RESPONSE_PLACEHOLDER exchange, move to ask for the first piece of information, which is the date of the incident..."
+    # "If the info is clear...gently guide the conversation towards the next piece of information."
+
+    # If the AI's response `reply_content` is asking for the *next* field, or concluding,
+    # then we should advance `session["current"]`.
+    # This is hard to determine programmatically.
+    # The current increment logic might be too aggressive for the new conversational intro.
+
+    # Revised logic for incrementing session["current"]:
+    # Only increment if a field was likely processed in this turn.
+    # A field is processed if:
+    # 1. We are past the initial greeting phase.
+    # 2. The user provided some input for the current field.
+    # 3. The AI's response (`reply_content`) is likely an acknowledgement + request for next, or conclusion.
+
+    # Let's assume the AI follows the prompt: if it got info for field `X` and it's clear, it will ask for `X+1`.
+    # So, if we were expecting field `X` (current `session["current"]`), and user provided it,
+    # and we are not in greeting phase, then the *next* expectation is `X+1`.
+
+    # Condition for advancing: not in initial greeting phase, and we haven't collected all fields yet.
+    can_advance_field = False
+    if len(messages) > 3 and session["current"] < len(field_order) : # system, user, assistant_greeting, user_reply_to_greeting -> at least 4 messages means greeting is over
+        # If we are here, user has replied to assistant.
+        # If assistant's last message (reply_content) is not a clarifying question for the current field,
+        # it means this field is considered done by the AI.
+        # This is still hard. The system_prompt tells AI to ask clarifying Q *before* moving on.
+        # So if AI is *not* asking clarifying Q for current field, it *is* moving on.
+
+        # The simplest robust way is to trust the AI to follow the field_order.
+        # If the user just provided data for `field_order[session["current"]]`,
+        # and the AI's `reply_content` acknowledges it and moves to the next or concludes,
+        # then `session["current"]` should be incremented.
+        # The `is_initial_greeting_phase` check before storing data helps.
+
+        # If we stored data for `session["fields"][field_order[session["current"]]]` this turn,
+        # it means `user_message` was the data for that field.
+        # Then, the AI's `reply_content` will be ack + next prompt OR ack + conclusion.
+        # So, we should advance `session["current"]`.
+
+        current_field_key_just_processed = field_order[session["current"]]
+        if current_field_key_just_processed in session["fields"] and session["fields"][current_field_key_just_processed] == user_message:
+             # This means user_message was indeed stored as data for the current field index.
+             # So, we can advance the index for the *next* turn.
+            if session["current"] < len(field_order) - 1:
+                session["current"] += 1
+                print(f"Advanced session current to {session['current']} for field {field_order[session['current']]}")
+            elif session["current"] == len(field_order) - 1: # Was the last field
+                session["current"] += 1 # Mark as completed
+                print(f"All fields processed. session current is now {session['current']}")
 
     messages.append({"role": "assistant", "content": reply_content})
     return jsonify({"reply": reply_content})

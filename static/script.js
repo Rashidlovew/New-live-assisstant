@@ -15,6 +15,16 @@ async function startRecording() {
     console.log("🎤 Recording already in progress, returning.");
     return;
   }
+
+  // Reset audio playback state from previous turn
+  try {
+    audioPlayback.pause();
+    audioPlayback.src = "";
+    audioPlayback.onended = null;
+  } catch (e) {
+    console.warn("Audio playback reset warning:", e); // Non-critical, log and continue
+  }
+
   isRecording = true;
   statusDiv.innerText = "🔴 جاري التسجيل...";
   generateBtn.disabled = true; // Disable during recording phase
@@ -35,83 +45,96 @@ async function startRecording() {
     return; // Stop execution if microphone access fails
   }
 
-  mediaRecorder = new MediaRecorder(stream);
-  audioChunks = [];
+  try {
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
 
-  mediaRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) audioChunks.push(e.data);
-  };
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
 
-  mediaRecorder.onstop = async () => {
-    statusDiv.innerText = "📤 جاري المعالجة...";
-    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-    const formData = new FormData();
-    formData.append('file', audioBlob, 'recording.webm');
+    mediaRecorder.onstop = async () => {
+      // When recording stops, release the stream tracks to turn off mic indicator
+      stream.getTracks().forEach(track => track.stop());
 
-    try {
-      const transcribeRes = await fetch("/transcribe", { method: "POST", body: formData });
-      if (!transcribeRes.ok) throw new Error(`Transcription error: ${transcribeRes.statusText}`);
-      const transcribeData = await transcribeRes.json();
-      if (transcribeRes.status === 500 || transcribeData.error) throw new Error(`Transcription failed: ${transcribeData.error || 'Server error'}`);
-
-
-      const chatRes = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, message: transcribeData.text })
-      });
-      if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.statusText}`);
-      const chatData = await chatRes.json();
-      if (chatRes.status === 500 || chatData.error) throw new Error(`Chat API failed: ${chatData.error || 'Server error'}`);
-
-
-      const speakRes = await fetch("/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: chatData.reply })
-      });
-      if (!speakRes.ok) throw new Error(`TTS error: ${speakRes.statusText}`);
-
-      const speakBlob = await speakRes.blob();
-      const audioUrl = URL.createObjectURL(speakBlob);
-      audioPlayback.src = audioUrl;
+      statusDiv.innerText = "📤 جاري المعالجة...";
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.webm');
 
       try {
-        await audioPlayback.play();
-        statusDiv.innerText = chatData.reply;
-      } catch (playErr) {
-        console.error("⏯️ Audio playback error:", playErr);
-        statusDiv.innerText = "⚠️ حدث خطأ أثناء تشغيل صوت الرد. حاول مرة أخرى.";
-        isRecording = false;
-        return;
-      }
+        const transcribeRes = await fetch("/transcribe", { method: "POST", body: formData });
+        if (!transcribeRes.ok) throw new Error(`Transcription error: ${transcribeRes.statusText}`);
+        const transcribeData = await transcribeRes.json();
+        if (transcribeRes.status >= 400 || transcribeData.error) throw new Error(`Transcription failed: ${transcribeData.error || 'Server error'}`);
 
-      audioPlayback.onended = () => {
-        audioPlayback.onended = null; // Prevent multiple calls
-        isRecording = false; // Reset recording state before deciding to re-record or stop
-        if (!chatData.reply.includes("تم استلام جميع البيانات")) {
-          setTimeout(() => startRecording(), 800);
-        } else {
-          statusDiv.innerText = chatData.reply + "\n✅ جاهز لإنشاء التقرير.";
-          generateBtn.disabled = false;
-          // isRecording is already false here due to the line above, but doesn't hurt to be explicit.
+
+        const chatRes = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, message: transcribeData.text })
+        });
+        if (!chatRes.ok) throw new Error(`Chat API error: ${chatRes.statusText}`);
+        const chatData = await chatRes.json();
+        if (chatRes.status >= 400 || chatData.error) throw new Error(`Chat API failed: ${chatData.error || 'Server error'}`);
+
+
+        const speakRes = await fetch("/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: chatData.reply })
+        });
+        if (!speakRes.ok) throw new Error(`TTS error: ${speakRes.statusText}`);
+
+        const speakBlob = await speakRes.blob();
+        const audioUrl = URL.createObjectURL(speakBlob);
+        audioPlayback.src = audioUrl;
+
+        try {
+          await audioPlayback.play();
+          statusDiv.innerText = chatData.reply;
+        } catch (playErr) {
+          console.error("⏯️ Audio playback error:", playErr);
+          statusDiv.innerText = "⚠️ حدث خطأ أثناء تشغيل صوت الرد. حاول مرة أخرى.";
           isRecording = false;
+          return;
         }
-      };
 
-    } catch (err) {
-      console.error("❌ Error in onstop processing:", err);
-      statusDiv.innerText = `⚠️ حدث خطأ: ${err.message}. حاول مرة أخرى.`;
-      isRecording = false;
-    }
-  };
+        audioPlayback.onended = () => {
+          audioPlayback.onended = null; // Prevent multiple calls
+          isRecording = false; // Reset recording state before deciding to re-record or stop
+          if (!chatData.reply.includes("تم استلام جميع البيانات")) {
+            setTimeout(() => startRecording(), 800);
+          } else {
+            statusDiv.innerText = chatData.reply + "\n✅ جاهز لإنشاء التقرير.";
+            generateBtn.disabled = false;
+            isRecording = false;
+          }
+        };
 
-  mediaRecorder.start();
-  setTimeout(() => {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
+      } catch (err) {
+        console.error("❌ Error in onstop processing:", err);
+        statusDiv.innerText = `⚠️ حدث خطأ: ${err.message}. حاول مرة أخرى.`;
+        isRecording = false;
+      }
+    }; // End of onstop
+
+    mediaRecorder.start();
+    setTimeout(() => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+    }, 5000); // Stop recording after 5 seconds
+
+  } catch (err) {
+    console.error("🎤 MediaRecorder setup error:", err);
+    statusDiv.innerText = "⚠️ خطأ في إعداد مسجل الصوت. حاول تحديث الصفحة.";
+    isRecording = false;
+    if (stream) { // Clean up stream if MediaRecorder setup failed
+        stream.getTracks().forEach(track => track.stop());
     }
-  }, 5000); // Stop recording after 5 seconds
+    return;
+  }
 }
 
 async function generateReport() {
@@ -142,15 +165,12 @@ async function generateReport() {
     console.error("❌ Generate error:", err);
     statusDiv.innerText = `⚠️ فشل إنشاء التقرير: ${err.message}.`;
   } finally {
-    // Re-enable button if report generation isn't the final step, or handle UI state appropriately.
-    // For now, assuming user might want to try again or start over if it fails.
-     generateBtn.disabled = false; // Or set based on whether a new conversation can start.
+     generateBtn.disabled = false;
   }
 }
 
 window.onload = () => {
   statusDiv.innerText = "👋 أهلاً بك! اضغط على الشاشة أو انتظر لبدء المحادثة الصوتية.";
-  // Adding a click listener for user-initiated start, good for browser policies
   const startListener = () => {
     document.body.removeEventListener('click', startListener);
     document.body.removeEventListener('keydown', startListener);
@@ -159,15 +179,14 @@ window.onload = () => {
     }
   };
   document.body.addEventListener('click', startListener);
-  document.body.addEventListener('keydown', startListener); // Allow Enter/Space to start
+  document.body.addEventListener('keydown', startListener);
 
-  // Keep automatic start as a fallback if no interaction after a delay
   setTimeout(() => {
     document.body.removeEventListener('click', startListener);
     document.body.removeEventListener('keydown', startListener);
-    if (!isRecording && !mediaRecorder) { // Start only if not already started by user interaction
+    if (!isRecording && !mediaRecorder) {
        console.log("⏰ Automatic conversation start initiated.");
        startRecording();
     }
-  }, 2500); // Slightly longer timeout to give user a chance to click
+  }, 2500);
 };
