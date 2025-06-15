@@ -3,17 +3,15 @@ from flask_cors import CORS
 import openai
 import tempfile
 import os
+import requests
 from docx import Document
 from docx.shared import Pt
 from docx.oxml.ns import qn
-from docx.oxml import OxmlElement
-from werkzeug.utils import secure_filename
-import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 from email.mime.text import MIMEText
-import io
+import smtplib
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,6 +20,7 @@ app = Flask(__name__)
 CORS(app)
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
 
 field_prompts = {
     "Date": "متى وقع الحادث؟",
@@ -41,7 +40,6 @@ field_names_ar = {
     "TechincalOpinion": "الرأي الفني"
 }
 
-# --- System prompt for conversational AI ---
 system_prompt = (
     "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود."
     " وظيفتك التحدث مع المستخدم بشكل عام ومريح، وتوجيه الحديث لجمع المعلومات اللازمة لتقرير هندسي جنائي."
@@ -49,7 +47,6 @@ system_prompt = (
     " خلال الحديث، اجمعي البيانات المطلوبة للتقرير دون مقاطعة أسلوب المحادثة، واحتفظي بكل معلومة تحصلين عليها."
 )
 
-# --- Store sessions ---
 sessions = {}
 
 def generate_response(messages):
@@ -108,17 +105,29 @@ def speak():
     data = request.get_json()
     text = data.get("text")
 
-    speech_file_path = os.path.join(tempfile.gettempdir(), "speech.mp3")
-    with openai.audio.speech.with_streaming_response.create(
-        model="tts-1",
-        voice="hala",
-        response_format="mp3",
-        input=text
-    ) as response:
-        with open(speech_file_path, "wb") as out:
-            out.write(response.read())
+    url = "https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB"
+    headers = {
+        "xi-api-key": ELEVEN_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.75
+        }
+    }
 
-    return send_file(speech_file_path, mimetype="audio/mpeg")
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code != 200:
+        return jsonify({"error": "TTS failed"}), 500
+
+    audio_path = os.path.join(tempfile.gettempdir(), "speech.mp3")
+    with open(audio_path, "wb") as f:
+        f.write(response.content)
+
+    return send_file(audio_path, mimetype="audio/mpeg")
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -129,22 +138,17 @@ def generate():
     for paragraph in doc.paragraphs:
         for key, val in inputs.items():
             if f"{{{{{key}}}}}" in paragraph.text:
-                inline = paragraph.runs
-                for i in range(len(inline)):
-                    if f"{{{{{key}}}}}" in inline[i].text:
-                        text = inline[i].text.replace(f"{{{{{key}}}}}", val)
-                        inline[i].text = text
-
-                paragraph.paragraph_format.right_to_left = True
-                paragraph.alignment = 2  # Right align
                 for run in paragraph.runs:
-                    run.font.name = 'Dubai'
-                    run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Dubai')
-                    run.font.size = Pt(13)
+                    if f"{{{{{key}}}}}" in run.text:
+                        run.text = run.text.replace(f"{{{{{key}}}}}", val)
+                        paragraph.paragraph_format.right_to_left = True
+                        paragraph.alignment = 2
+                        run.font.name = 'Dubai'
+                        run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Dubai')
+                        run.font.size = Pt(13)
 
     output_path = os.path.join(tempfile.gettempdir(), "final_report.docx")
     doc.save(output_path)
-
     send_email_with_attachment(output_path)
     return send_file(output_path, as_attachment=True)
 
