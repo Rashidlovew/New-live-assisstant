@@ -120,8 +120,13 @@ def speak():
     }
 
     response = requests.post(url, json=payload, headers=headers)
+
     if response.status_code != 200:
-        return jsonify({"error": "TTS failed"}), 500
+        print("❌ ElevenLabs Error:", response.text)  # سجل محتوى الخطأ في اللوج
+        return jsonify({
+            "error": "TTS failed",
+            "details": response.text
+        }), 500
 
     audio_path = os.path.join(tempfile.gettempdir(), "speech.mp3")
     with open(audio_path, "wb") as f:
