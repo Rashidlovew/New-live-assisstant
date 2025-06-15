@@ -28,10 +28,12 @@ def transcribe():
     file = request.files["audio"]
     user_id = request.form.get("user_id", "anonymous")
 
-    transcript_response = openai.audio.transcriptions.create(
-        model="whisper-1",
-        file=file
-    )
+    with file.stream as f:
+        transcript_response = openai.audio.transcriptions.create(
+            model="whisper-1",
+            file=f
+        )
+
     text = transcript_response.text
 
     conversation = user_states.get(user_id, [])
