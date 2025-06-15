@@ -50,14 +50,17 @@ def transcribe():
 @app.route("/speak", methods=["POST"])
 def speak():
     text = request.json.get("text")
-    response = openai.Audio.speech.create(
+
+    response = openai.audio.speech.create(
         model="tts-1",
         voice="onyx",
         input=text
     )
+
     audio_path = os.path.join(tempfile.gettempdir(), "response.mp3")
     with open(audio_path, "wb") as f:
-        f.write(response.content)
+        f.write(response.read())
+
     return send_file(audio_path, mimetype="audio/mpeg")
 
 def handle_user_input(user_id, user_input):
