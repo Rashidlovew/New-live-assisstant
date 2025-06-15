@@ -1,4 +1,4 @@
-// === Updated script.js with step-by-step voice assistant ===
+// === New script.js with automatic voice turn-taking and natural conversation ===
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
@@ -52,16 +52,20 @@ async function startRecording() {
       const audioUrl = URL.createObjectURL(speakBlob);
       audioPlayback.src = audioUrl;
       audioPlayback.play();
-
       statusDiv.innerText = chatData.reply;
 
-      if (chatData.reply.includes("تم استلام جميع البيانات")) {
-        generateBtn.disabled = false;
-      }
+      // Listen again after playback ends
+      audioPlayback.onended = () => {
+        if (!chatData.reply.includes("تم استلام جميع البيانات")) {
+          setTimeout(() => startRecording(), 800); // continue the conversation
+        } else {
+          generateBtn.disabled = false;
+        }
+      };
+
     } catch (err) {
       console.error("❌ Error:", err);
       statusDiv.innerText = "حدث خطأ. حاول مرة أخرى.";
-    } finally {
       isRecording = false;
     }
   };
@@ -92,3 +96,8 @@ async function generateReport() {
     statusDiv.innerText = "فشل إنشاء التقرير.";
   }
 }
+
+// Start initial conversation automatically
+window.onload = () => {
+  setTimeout(() => startRecording(), 2000);
+};
