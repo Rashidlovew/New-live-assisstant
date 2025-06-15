@@ -20,6 +20,7 @@
     button {
       font-size: 18px;
       padding: 12px 24px;
+      margin: 10px;
       background-color: #3498db;
       color: white;
       border: none;
@@ -44,8 +45,9 @@
 </head>
 <body>
   <h2>🎙️ مساعد إعداد التقارير - قسم الهندسة الجنائية</h2>
-  <button onclick="startRecording()">🎤 اضغط هنا لبدء التسجيل</button>
-  <p id="status">👈 اضغط على الزر للتحدث مع المساعد</p>
+  <button onclick="startRecording()">🎤 اضغط هنا للرد</button>
+  <button id="generateBtn" onclick="generateReport()">📄 إنشاء التقرير</button>
+  <p id="status">👈 اضغط على الزر وابدأ التحدث مع المساعد</p>
   <audio id="audioPlayback" controls></audio>
 
   <script src="/static/script.js"></script>
