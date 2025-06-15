@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, render_template
 from flask_cors import CORS
 import openai
 import tempfile
@@ -15,7 +15,7 @@ from email import encoders
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='static', template_folder='templates')
 CORS(app)
 
 # Email config
@@ -29,6 +29,10 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 # Set of fields to collect
 fields_order = ["name", "Date", "Briefing", "LocationObservations", "Examination", "Outcomes", "TechincalOpinion"]
 session_data = {}
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
