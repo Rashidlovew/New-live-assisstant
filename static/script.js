@@ -124,7 +124,7 @@ async function startRecording() {
       if (mediaRecorder && mediaRecorder.state === "recording") {
         mediaRecorder.stop();
       }
-    }, 5000); // Stop recording after 5 seconds
+    }, 10000); // Stop recording after 10 seconds (changed from 5000)
 
   } catch (err) {
     console.error("🎤 MediaRecorder setup error:", err);
