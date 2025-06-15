@@ -88,11 +88,13 @@ async function startRecording() {
 
       audioPlayback.onended = () => {
         audioPlayback.onended = null; // Prevent multiple calls
+        isRecording = false; // Reset recording state before deciding to re-record or stop
         if (!chatData.reply.includes("تم استلام جميع البيانات")) {
           setTimeout(() => startRecording(), 800);
         } else {
           statusDiv.innerText = chatData.reply + "\n✅ جاهز لإنشاء التقرير.";
           generateBtn.disabled = false;
+          // isRecording is already false here due to the line above, but doesn't hurt to be explicit.
           isRecording = false;
         }
       };
