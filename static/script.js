@@ -26,27 +26,47 @@ async function startRecording() {
     formData.append('file', audioBlob, 'recording.webm');
 
     try {
+      // 1. تحويل الصوت إلى نص
       const transcribeRes = await fetch("/transcribe", {
         method: "POST",
         body: formData
       });
 
       const transcribeData = await transcribeRes.json();
-      console.log("📝 النص:", transcribeData.text); // للتأكد
+      console.log("📝 النص:", transcribeData.text);
 
-      // ✅ استخدم النص من transcribeData.text وليس reply
+      // 2. إرسال النص إلى GPT لإعادة الصياغة
+      const chatRes = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "user123",
+          message: transcribeData.text
+        })
+      });
+
+      const chatData = await chatRes.json();
+      console.log("🤖 GPT الرد:", chatData.reply);
+
+      // 3. تحويل النص المعاد صياغته إلى صوت
       const speakRes = await fetch("/speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: transcribeData.text })
+        body: JSON.stringify({ text: chatData.reply })
       });
+
+      if (!speakRes.ok) {
+        throw new Error("خطأ في تحويل النص إلى صوت");
+      }
 
       const speakBlob = await speakRes.blob();
       const audioUrl = URL.createObjectURL(speakBlob);
 
       audioPlayback.src = audioUrl;
       audioPlayback.play();
-      statusDiv.innerText = transcribeData.text;
+
+      // 4. عرض الرد النهائي في الشاشة
+      statusDiv.innerText = chatData.reply;
 
     } catch (error) {
       console.error("❌ Error:", error);
