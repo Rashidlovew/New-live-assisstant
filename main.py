@@ -1,133 +1,117 @@
-from flask import Flask, request, jsonify, send_file, render_template
-import openai
-import tempfile
-import os
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 from docx import Document
-from datetime import datetime
+from docx.shared import Pt
+from docx.oxml.ns import qn
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+import openai
+import os
+import tempfile
 import smtplib
 from email.message import EmailMessage
-from werkzeug.utils import secure_filename
-
-app = Flask(__name__, static_url_path='/static', static_folder='static', template_folder='templates')
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-field_prompts = {
-    "greeting": "مرحباً، أنا المساعد الذكي من قسم الهندسة الجنائية. هنا لمساعدتك في إعداد تقريرك الفني بكل سلاسة.",
-    "ice_breaker": "بس قبل ما نبدأ، حاب أسألك كيف كان يومك؟ إن شاء الله كل شيء طيب؟",
-    "name": "تشرفت فيك، ممكن أعرف اسمك الكريم عشان أسجله في التقرير؟",
-    "Date": "خلينا نبدأ بالتاريخ... متى كانت الواقعة؟",
-    "Briefing": "ممتاز، ممكن تعطيني موجز بسيط عن الحادث؟",
-    "LocationObservations": "وبخصوص المعاينة الميدانية، إيش لاحظت في موقع الحادث؟",
-    "Examination": "ومن خلال فحصك الفني، وش تبين لك؟",
-    "Outcomes": "وبعد المعاينة والفحص، ما هي النتيجة اللي وصلت لها؟",
-    "TechincalOpinion": "وأخيرًا، ما هو رأيك الفني في هذه الحالة؟",
-    "closing": "شكرًا لك {Investigator}، تم تسجيل كل المعلومات وسأقوم الآن بإعداد التقرير وإرساله للقسم المختص."
-}
+app = Flask(__name__)
+CORS(app)
 
-fields = ["name", "Date", "Briefing", "LocationObservations", "Examination", "Outcomes", "TechincalOpinion"]
-session_data = {}
-current_field_index = {}
-
-@app.route("/")
-def index():
-    return render_template("index.html")
+user_states = {}
+template_path = "police_report_template.docx"
+final_email = "frnreports@gmail.com"
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
-    audio = request.files['audio']
-    user_id = request.form.get("user_id", "default_user")
-    filename = secure_filename(audio.filename)
-    path = os.path.join(tempfile.gettempdir(), filename)
-    audio.save(path)
+    file = request.files["audio"]
+    user_id = request.form.get("user_id", "anonymous")
 
-    with open(path, "rb") as f:
-        transcript = openai.Audio.transcribe("whisper-1", f)["text"]
+    transcript_response = openai.audio.transcriptions.create(
+        model="whisper-1",
+        file=file
+    )
+    text = transcript_response.text
 
-    response = handle_user_input(user_id, transcript)
-    return jsonify({"reply": response})
+    conversation = user_states.get(user_id, [])
+    conversation.append({"role": "user", "content": text})
+    
+    system_prompt = (
+        "أنت مساعد صوتي ذكي متخصص في كتابة تقارير فنية لقسم الهندسة الجنائية. "
+        "اجعل المحادثة طبيعية وودية تبدأ بالترحيب ثم الانتقال بسلاسة لجمع البيانات من المحقق. "
+        "لا تكرر كلام المستخدم، بل انتقل للسؤال التالي بطريقة محادثة بشرية. "
+        "احرص على فهم نية المستخدم بدون الاعتماد على كلمات محددة فقط. "
+        "بعد جمع المعلومات، أخبره أنك سترسل التقرير."
+    )
+    
+    conversation.insert(0, {"role": "system", "content": system_prompt})
 
-@app.route("/speak", methods=["POST"])
-def speak():
-    text = request.json.get("text")
-
-    response = openai.audio.speech.create(
-        model="tts-1",
-        voice="onyx",
-        input=text
+    response = openai.chat.completions.create(
+        model="gpt-4o",
+        messages=conversation
     )
 
-    audio_path = os.path.join(tempfile.gettempdir(), "response.mp3")
-    with open(audio_path, "wb") as f:
-        f.write(response.read())
+    reply = response.choices[0].message.content
+    conversation.append({"role": "assistant", "content": reply})
+    user_states[user_id] = conversation
 
-    return send_file(audio_path, mimetype="audio/mpeg")
+    # Check if report is ready
+    if any("سأقوم الآن بإعداد التقرير" in m["content"] for m in conversation):
+        save_report_and_email(user_id)
 
-def handle_user_input(user_id, user_input):
-    if user_id not in session_data:
-        session_data[user_id] = {}
-        current_field_index[user_id] = 0
-        return field_prompts["greeting"]
+    return jsonify({"reply": reply})
 
-    if len(session_data[user_id]) == 0:
-        session_data[user_id]["ice"] = user_input
-        return field_prompts["name"]
+@app.route("/speak")
+def speak():
+    text = request.args.get("text", "")
+    speech = openai.audio.speech.create(
+        model="tts-1",
+        voice="onyx",
+        response_format="mp3",
+        input=text
+    )
+    temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+    temp.write(speech.read())
+    temp.close()
+    return send_file(temp.name, mimetype="audio/mpeg")
 
-    current_index = current_field_index[user_id]
-    if current_index >= len(fields):
-        return "جاري إعداد التقرير..."
+def save_report_and_email(user_id):
+    doc = Document(template_path)
+    conversation = user_states.get(user_id, [])
+    user_texts = [msg["content"] for msg in conversation if msg["role"] == "user"]
 
-    field = fields[current_index]
-    session_data[user_id][field] = user_input
-    current_field_index[user_id] += 1
+    # Replace placeholders with collected text
+    full_text = "\n".join(user_texts)
+    for p in doc.paragraphs:
+        if "{{content}}" in p.text:
+            p.text = full_text
+            p.runs[0].font.name = 'Dubai'
+            p.runs[0]._element.rPr.rFonts.set(qn('w:eastAsia'), 'Dubai')
+            p.runs[0].font.size = Pt(13)
+            p.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT
 
-    if current_field_index[user_id] < len(fields):
-        next_field = fields[current_field_index[user_id]]
-        return field_prompts[next_field]
-    else:
-        generate_report(user_id)
-        name = session_data[user_id].get("name", "")
-        reply = field_prompts["closing"].replace("{Investigator}", name)
-        return reply
+    report_path = f"/tmp/report_{user_id}.docx"
+    doc.save(report_path)
 
-def generate_report(user_id):
-    data = session_data[user_id]
-    template = Document("police_report_template.docx")
+    send_email(report_path, final_email)
 
-    replacements = {
-        "{{Date}}": data.get("Date", ""),
-        "{{Briefing}}": data.get("Briefing", ""),
-        "{{LocationObservations}}": data.get("LocationObservations", ""),
-        "{{Examination}}": data.get("Examination", ""),
-        "{{Outcomes}}": data.get("Outcomes", ""),
-        "{{TechincalOpinion}}": data.get("TechincalOpinion", ""),
-        "{{Investigator}}": data.get("name", "")
-    }
-
-    for para in template.paragraphs:
-        for key, val in replacements.items():
-            if key in para.text:
-                para.text = para.text.replace(key, val)
-
-    temp_path = tempfile.mktemp(suffix=".docx")
-    template.save(temp_path)
-    send_email(temp_path, data.get("name", ""))
-
-def send_email(doc_path, investigator_name):
-    email = "frnreports@gmail.com"
+def send_email(filepath, to_email):
     msg = EmailMessage()
-    msg["Subject"] = f"تقرير فحص هندسي من {investigator_name}"
-    msg["From"] = os.getenv("EMAIL_USER")
-    msg["To"] = email
-    msg.set_content(f"تم إعداد التقرير بواسطة {investigator_name}. مرفق طياً.")
+    msg["Subject"] = "تقرير هندسي جاهز"
+    msg["From"] = "noreply@aiassistant.com"
+    msg["To"] = to_email
+    msg.set_content("تم إعداد التقرير الفني المرفق من خلال المساعد الذكي.")
 
-    with open(doc_path, "rb") as f:
+    with open(filepath, "rb") as f:
         file_data = f.read()
-        msg.add_attachment(file_data, maintype="application", subtype="vnd.openxmlformats-officedocument.wordprocessingml.document", filename="report.docx")
+        file_name = os.path.basename(filepath)
+        msg.add_attachment(file_data, maintype="application", subtype="vnd.openxmlformats-officedocument.wordprocessingml.document", filename=file_name)
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+    with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+        smtp.starttls()
         smtp.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
         smtp.send_message(msg)
+
+@app.route("/")
+def index():
+    return "👋 Hello from the smart assistant."
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
