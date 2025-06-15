@@ -27,7 +27,7 @@ field_order = [
     "Examination", "Outcomes", "TechincalOpinion"
 ]
 
-# Reverted field_prompts to be more direct
+# field_prompts are kept for reference but system_prompt dictates exact phrasing
 field_prompts = {
     "Date": "🎙️ أرسل تاريخ الواقعة.",
     "Briefing": "🎙️ أرسل موجز الواقعة.",
@@ -39,16 +39,22 @@ field_prompts = {
 
 sessions = {}
 
-# New direct system_prompt
+# Hyper-restrictive system_prompt
 system_prompt = (
-    "أنت مساعد AI متخصص في قسم الهندسة الجنائية. مهمتك هي جمع المعلومات اللازمة لإعداد تقرير فني بكفاءة ومهنية."
-    " ستطرح الأسئلة على المستخدم حقلًا تلو الآخر."
-    " عند بدء المحادثة لأول مرة (عندما يكون تاريخ الرسائل فارغًا باستثناء رسالة النظام هذه ورسالة المستخدم الأولى), يجب أن يكون ردك الأول هو طلب المعلومة الأولى مباشرة وهي 'تاريخ الحادث'. استخدم صياغة مثل: 'أنا هنا لمساعدتك في إعداد تقرير الهندسة الجنائية. لنبدأ، يرجى تقديم تاريخ الحادث.'"
-    " لكل معلومة يقدمها المستخدم بعد ذلك، قم بتأكيد مقتضب (مثال: 'تم تسجيل التاريخ.') ثم انتقل مباشرة لطلب المعلومة التالية بالترتيب المحدد."
-    " إذا كانت إجابة المستخدم غير واضحة، اطلب منه التوضيح بلطف ثم كرر طلب نفس المعلومة قبل المتابعة."
-    " يجب جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
-    " عند استلام جميع الحقول، أعلن عن اكتمال جمع البيانات وأن التقرير سيتم إعداده، مثلاً: 'شكراً لك، تم استلام جميع البيانات. يتم الآن إعداد التقرير.'"
-    " مثال لطلب معلومة تالية: 'الآن، يرجى تقديم موجز للحادث.'"
+    "أنت روبوت لجمع البيانات. مهمتك الوحيدة هي طلب معلومات لحقول محددة بالترتيب التالي الصارم: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
+    "عندما تبدأ محادثة جديدة (أي عندما تكون رسالتك هي الأولى بعد رسالة النظام ورسالة المستخدم الأولية), اطرح السؤال عن الحقل الأول 'Date' مباشرةً مستخدمًا العبارة التالية بالضبط: 'يرجى تقديم تاريخ الحادث.'"
+    "بعد أن يقدم المستخدم معلومة لأي حقل، يجب أن يكون ردك هو تأكيد استلام المعلومة والانتقال مباشرةً لطلب الحقل التالي بالترتيب. استخدم صياغة مثل: 'تم استلام [اسم الحقل الذي تم استلامه]. الآن، يرجى تقديم [اسم الحقل التالي].'"
+    "استخدم العبارات التالية بالضبط عند طلب كل حقل:"
+    "- لطلب Date (بعد الرد الأولية): 'يرجى تقديم تاريخ الحادث.'" # This is the AI's very first spoken line.
+    "- لطلب Briefing: 'تم استلام Date. الآن، يرجى تقديم موجز الواقعة.'" # Note: Use the actual field name 'Date' not its Arabic translation in this confirmation part.
+    "- لطلب LocationObservations: 'تم استلام Briefing. الآن، يرجى تقديم معاينة الموقع.'"
+    "- لطلب Examination: 'تم استلام LocationObservations. الآن، يرجى تقديم نتيجة الفحص الفني.'"
+    "- لطلب Outcomes: 'تم استلام Examination. الآن، يرجى تقديم النتيجة.'"
+    "- لطلب TechincalOpinion: 'تم استلام Outcomes. الآن، يرجى تقديم الرأي الفني.'"
+    "لا تقم بإضافة أي كلمات إضافية، لا تحيات، لا تعليقات، لا أسئلة توضيحية، ولا أي نوع من الحوار خارج هذا النمط المحدد."
+    "إذا كانت إجابة المستخدم غير واضحة أو فارغة، كرر نفس سؤال الحقل الحالي بالضبط."
+    "بعد أن يقدم المستخدم معلومات حقل 'TechincalOpinion'، ردك الوحيد والأخير يجب أن يكون بالضبط: '✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...'"
+    "لا تستخدم أي رموز emoji إلا في الرسالة النهائية."
 )
 
 
@@ -56,7 +62,7 @@ def generate_response(messages):
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        temperature=0.5 # Adjusted temperature for more directness
+        temperature=0.0 # Set temperature to 0 for deterministic, direct responses
     )
     return response.choices[0].message.content
 
@@ -88,8 +94,8 @@ def chat():
         sessions[user_id] = {
             "messages": [{"role": "system", "content": system_prompt}],
             "fields": {},
-            "current": 0, # Starts at 0, expecting "Date"
-            "chat_state": "collecting_data" # Start directly in collecting_data state
+            "current": 0,
+            "chat_state": "collecting_data"
         }
         if not user_message:
             user_message = "(بدأ المستخدم المحادثة)"
@@ -99,9 +105,11 @@ def chat():
     messages = session["messages"]
 
     should_store_data = True
+    # The first message from user is just for the AI to react and ask the first question.
+    # messages initially only has system prompt.
     if len(messages) == 1:
         should_store_data = False
-        print(f"DEBUG: UserID {user_id} First effective user interaction. Not storing this message as field data. User message: '{user_message}'")
+        print(f"DEBUG: UserID {user_id} First effective user interaction. Not storing this message ('{user_message}') as field data.")
 
     messages.append({"role": "user", "content": user_message})
     reply_content = ""
@@ -132,10 +140,26 @@ def chat():
                     session["current"] += 1
                     session["chat_state"] = "completed"
                     print(f"DEBUG: UserID {user_id} All fields processed. session current is now {session['current']}. State: {session['chat_state']}.")
+            else:
+                # This case might occur if should_store_data was true but for some reason the data wasn't stored (e.g. bad index)
+                # Or if user_message was an empty string that got stored, then this check fails.
+                # For a hyper-restrictive bot, this scenario means user provided something, it was stored. We should advance.
+                # The system_prompt now says "If the user's answer is unclear or empty, repeat the same field question."
+                # This means the LLM itself should handle not moving to the next prompt.
+                # So, Python logic for advancing session["current"] should be simpler: if data was stored, LLM will be told to ask next.
+                print(f"DEBUG: UserID {user_id} Data for field {current_field_key_just_processed} was expected to be stored but condition failed. User message: '{user_message}', Stored: '{session['fields'].get(current_field_key_just_processed)}'. Not advancing session['current']. LLM should handle re-asking.")
 
     elif session.get("chat_state") == "completed":
         print(f"DEBUG: UserID {user_id} in 'completed' state. User message: '{user_message}'")
-        reply_content = generate_response(messages)
+        # System prompt dictates the AI's final message. If user speaks after that, AI might respond based on general knowledge.
+        # To ensure it doesn't engage further, we could just return a fixed message or the last AI message.
+        # For now, let LLM generate based on its last "completed" message in history.
+        if messages[-2]["role"] == "assistant" and messages[-2]["content"].startswith("✅ تم استلام جميع البيانات."):
+            reply_content = messages[-2]["content"] # Repeat the completion message
+            print(f"DEBUG: UserID {user_id} Conversation already completed. Repeating final message.")
+        else:
+            reply_content = generate_response(messages)
+
     else:
         print(f"ERROR: UserID {user_id} Unknown chat_state: {session.get('chat_state')}")
         reply_content = "حدث خطأ غير متوقع في النظام."
@@ -162,7 +186,6 @@ def speak():
         "voice_settings": {
             "stability": 0.4,
             "similarity_boost": 0.85
-            # "speed": 1.3, // This line is removed
         }
     }
 
@@ -184,10 +207,9 @@ def generate():
 
     if not fields:
         print("DEBUG: /generate called with no fields data.")
-        # For robust handling, ensure fields is at least an empty dict if None
         fields = {}
 
-    doc = Document("police_report_template.docx") # Load template
+    doc = Document("police_report_template.docx")
 
     keys_replaced_in_doc = set()
 
@@ -228,7 +250,7 @@ def generate():
     output_path = os.path.join(tempfile.gettempdir(), "final_report.docx")
     doc.save(output_path)
     print(f"DEBUG: Report saved to {output_path}")
-    # send_email_with_attachment(output_path) # Temporarily commented out
+    # send_email_with_attachment(output_path)
     return send_file(output_path, as_attachment=True)
 
 def send_email_with_attachment(file_path):
