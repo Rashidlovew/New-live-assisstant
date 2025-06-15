@@ -39,12 +39,15 @@ field_prompts = {
 sessions = {}
 
 system_prompt = (
-    "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود."
-    " وظيفتك التحدث مع المستخدم بشكل محاورة عامة وعفوية لجمع معلومات التقرير،"
-    " حقلًا تلو الآخر دون أن يشعر المستخدم أن هناك نموذج يتم تعبئته."
-    " شجعيه على الحديث بحرية، واطرحي أسئلة ذكية داخل السياق دون إزعاج."
-    " لا تكرري نفس السؤال إذا أجاب، بل تابعي إلى الخطوة التالية بسلاسة."
-    " تأكدي من جمع كل الحقول التالية: التاريخ، موجز الواقعة، معاينة الموقع، نتيجة الفحص، النتيجة، والرأي الفني."
+    "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود ومتعاطف."
+    " وظيفتك هي إجراء محادثة طبيعية لجمع معلومات لتقرير فني. لا تجعلي المستخدم يشعر كأنه يملأ استمارة."
+    " لكل معلومة يقدمها المستخدم (مثلاً عن 'التاريخ')، ابدئي ردك بتأكيد موجز وطبيعي لهذه المعلومة (مثلاً: 'حسنًا، تاريخ الواقعة هو [التاريخ الذي ذكره المستخدم].')."
+    " بعد ذلك، إذا كانت إجابة المستخدم عن الحقل الحالي مختصرة جدًا أو غير واضحة، اطرحي سؤال متابعة مفتوح لتستوضحي أكثر عن نفس الحقل قبل الانتقال لطلب معلومات عن الحقل التالي."
+    " إذا كانت المعلومة واضحة، انتقلي بسلاسة لطلب المعلومة التالية حسب الترتيب المحدد."
+    " استخدمي انتقالات عبورية لطيفة بين المواضيع المختلفة للتقرير."
+    " هدفك هو جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
+    " عندما يتم جمع كل الحقول بنجاح، قومي بتأكيد استلام المعلومة الأخيرة ثم أعلني بشكل واضح عن اكتمال جمع البيانات وأن التقرير سيتم إعداده (مثلاً: 'شكرًا لك، هذه هي كل المعلومات المطلوبة. ✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...')."
+    " تذكري أن تستخدمي هذه التعليمات في كل رد."
 )
 
 def generate_response(messages):
@@ -96,22 +99,41 @@ def chat():
 
     session = sessions[user_id]
     messages = session["messages"]
+
     messages.append({"role": "user", "content": user_message})
 
-    current_field = field_order[session["current"]]
-    session["fields"][current_field] = user_message
-
-    session["current"] += 1
     if session["current"] < len(field_order):
-        next_field = field_order[session["current"]]
-        next_prompt = field_prompts[next_field]
-        messages.append({"role": "assistant", "content": next_prompt})
-        reply = next_prompt
-    else:
-        reply = "✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير..."
+        current_field_key = field_order[session["current"]]
+        session["fields"][current_field_key] = user_message
 
-    messages.append({"role": "assistant", "content": reply})
-    return jsonify({"reply": reply})
+    reply_content = generate_response(messages)
+
+    # Advance session["current"] if the LLM is expected to have moved on.
+    # The system_prompt guides the LLM to ask for follow-ups on the *same* field if unclear.
+    # If the LLM is satisfied, it moves to the next field or concludes.
+    # We increment `session["current"]` to reflect the next field the user should be providing,
+    # or to mark completion.
+    # This happens *after* the user provides data for the current `session["current"]` index,
+    # and *after* the LLM generates a response based on that.
+    # The new `session["current"]` is what the *next* user message will be for.
+
+    # Heuristic: if the LLM's reply does not seem to be a clarifying question about the field
+    # we just collected data for, then we can assume it's time to move to the next field index.
+    # For now, we will increment if the current field (before increment) is not the last one.
+    # This relies heavily on the LLM following the prompt to ask for the next field in sequence.
+    if session["current"] < len(field_order) - 1:
+        # We've processed data for field `session["current"]`. If it's not the last field,
+        # the LLM *should* be asking for `session["current"] + 1`. So, update `session["current"]`
+        # to reflect that the *next* user input is for this new index.
+        session["current"] += 1
+    elif session["current"] == len(field_order) - 1:
+        # We've processed data for the *last* field.
+        # The LLM *should* be generating a concluding message.
+        # Increment `session["current"]` to mark that all fields are done.
+        session["current"] += 1 # Now session["current"] == len(field_order)
+
+    messages.append({"role": "assistant", "content": reply_content})
+    return jsonify({"reply": reply_content})
 
 @app.route("/speak", methods=["POST"])
 def speak():
