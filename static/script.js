@@ -18,7 +18,7 @@ async function startRecording() {
     statusDiv.innerText = "⏳ جاري المعالجة...";
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
     const formData = new FormData();
-    formData.append("audio", audioBlob);
+    formData.append("audio", audioBlob, "recording.webm");
     formData.append("user_id", "test_user");
 
     const response = await fetch("/transcribe", {
