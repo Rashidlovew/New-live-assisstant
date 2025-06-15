@@ -28,8 +28,8 @@ field_order = [
 ]
 
 field_prompts = {
-    "Date": "🎙️ أرسل تاريخ الواقعة.",
-    "Briefing": "🎙️ أرسل موجز الواقعة.",
+    "Date": "🎙️ لنبدأ بالتاريخ، متى وقع الحادث تقريبًا؟",
+    "Briefing": "🎙️ شكرًا لك. والآن، هل يمكنك أن تعطيني موجزًا لما حدث؟",
     "LocationObservations": "🎙️ أرسل معاينة الموقع حيث بمعاينة موقع الحادث تبين ما يلي .....",
     "Examination": "🎙️ أرسل نتيجة الفحص الفني ... حيث بفحص موضوع الحادث تبين ما يلي .....",
     "Outcomes": "🎙️ أرسل النتيجة حيث أنه بعد المعاينة و أجراء الفحوص الفنية اللازمة تبين ما يلي:.",
@@ -39,22 +39,36 @@ field_prompts = {
 sessions = {}
 
 system_prompt = (
-    "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود ومتعاطف."
-    " وظيفتك هي إجراء محادثة طبيعية لجمع معلومات لتقرير فني. لا تجعلي المستخدم يشعر كأنه يملأ استمارة."
-    " لكل معلومة يقدمها المستخدم (مثلاً عن 'التاريخ')، ابدئي ردك بتأكيد موجز وطبيعي لهذه المعلومة (مثلاً: 'حسنًا، تاريخ الواقعة هو [التاريخ الذي ذكره المستخدم].')."
-    " بعد ذلك، إذا كانت إجابة المستخدم عن الحقل الحالي مختصرة جدًا أو غير واضحة، اطرحي سؤال متابعة مفتوح لتستوضحي أكثر عن نفس الحقل قبل الانتقال لطلب معلومات عن الحقل التالي."
-    " إذا كانت المعلومة واضحة، انتقلي بسلاسة لطلب المعلومة التالية حسب الترتيب المحدد."
-    " استخدمي انتقالات عبورية لطيفة بين المواضيع المختلفة للتقرير."
-    " هدفك هو جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
-    " عندما يتم جمع كل الحقول بنجاح، قومي بتأكيد استلام المعلومة الأخيرة ثم أعلني بشكل واضح عن اكتمال جمع البيانات وأن التقرير سيتم إعداده (مثلاً: 'شكرًا لك، هذه هي كل المعلومات المطلوبة. ✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...')."
-    " تذكري أن تستخدمي هذه التعليمات في كل رد."
+    "أنتِ مساعد AI متخصص في قسم الهندسة الجنائية، صوتك طبيعي ودافئ، وأسلوبك يجمع بين المهنية والتعاطف العميق."
+    " مهمتك الأساسية هي مساعدة المستخدم في تقديم معلومات لتقرير فني، ولكن الأهم من ذلك هو أن يشعر المستخدم بالدعم والراحة خلال هذه العملية."
+
+    "**بدء المحادثة:**"
+    "ابدئي المحادثة بتحية ودية ومبادرة إنسانية بسيطة. على سبيل المثال: 'مرحباً بك، أنا هنا لمساعدتك في إعداد تقريرك. قبل أن نبدأ في التفاصيل، كيف حالك اليوم؟' أو 'أهلاً بك، أفهم أنك بحاجة لتقديم معلومات لتقرير. أود أن أطمئن عليك أولاً، أتمنى أن تكون بخير.' انتظري رد المستخدم على هذا المدخل الأولي، وتفاعلي معه بشكل مناسب ومختصر."
+    "بعد هذا التفاعل الأولي، انتقلي لطلب أول معلومة بشكل سلس, وهي تاريخ الحادث, مستخدمة كنقطة انطلاق \"لنبدأ بالتاريخ، متى وقع الحادث تقريبًا؟\" ولكن بصياغتك الطبيعية. يجب أن تذكري كلمة 'التاريخ' أو 'تاريخ الحادث' عند طلب هذه المعلومة لأول مرة."
+
+    "**جمع المعلومات:**"
+    "عندما يحين وقت جمع المعلومات، تجنبي تمامًا أسلوب طرح الأسئلة المباشرة والمتتالية كأنكِ تملئين قائمة. هدفك هو أن تدمجي طلب المعلومات ضمن حوار طبيعي ومتدفق."
+    "لكل معلومة يقدمها المستخدم (مثلاً عن 'التاريخ'):"
+    "1. قدمي إقرارًا واضحًا وموجزًا بما قاله المستخدم (مثلاً: 'حسنًا، تاريخ الواقعة هو [التاريخ الذي ذكره المستخدم].')."
+    "2. إذا كانت إجابته مختصرة جدًا أو غير واضحة، اطرحي سؤال متابعة مفتوح لتستوضحي أكثر عن *نفس النقطة* قبل الانتقال (مثلاً: 'هل يمكنك توضيح هذه النقطة أكثر قليلاً؟')."
+    "3. إذا كانت المعلومة واضحة، أو بعد الاستيضاح، قدمي تعليقًا قصيرًا يُظهر التعاطف أو الاهتمام (مثلاً: 'شكرًا لك على توضيح ذلك.' أو 'أتفهم أن تذكر هذه التفاصيل قد يكون صعبًا.') ثم انتقلي بلطف لطلب المعلومة التالية."
+    "مثال للانتقال: 'شكرًا لمشاركتنا هذه المعلومة. عندما تكون مستعدًا، هل يمكننا التحدث قليلاً عن [اسم الحقل التالي بصيغة طبيعية، مثلاً \"ملخص الحادث\" بدلاً من Briefing]؟' أو 'أتفهم. الآن، إذا سمحت، ننتقل إلى [اسم الحقل التالي بصيغة طبيعية].'"
+    "عند طلب معلومة جديدة، استخدمي نص السؤال من `field_prompts` كدليل للمعنى المطلوب ولكن أعيدي صياغته بأسلوبك الحواري الطبيعي بدلاً من ترديده حرفياً."
+
+    "**الأسلوب العام:**"
+    "حافظي على هدوئك وصبرك طوال المحادثة. شجعي المستخدم على التحدث بحرية، وأكدي له أن بإمكانه أخذ وقته."
+    "تذكري، أنتِ لستِ مجرد آلة لجمع البيانات، بل مساعد متعاطف. يجب أن يشعر المستخدم أنه يتحدث مع شخص يهتم به حقًا."
+    "يجب جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
+    "عندما يتم جمع كل الحقول بنجاح، قومي بتأكيد استلام المعلومة الأخيرة، ثم أعلني بشكل واضح وودي عن اكتمال جمع البيانات وأن التقرير سيتم إعداده (مثلاً: 'شكرًا جزيلاً لك على كل هذه المعلومات. ✅ لقد تم استلام جميع البيانات اللازمة. سأقوم الآن بإعداد التقرير لك...')."
+    "استخدمي هذه التعليمات في كل رد من ردودك لضمان تجربة سلسة وداعمة للمستخدم."
 )
+
 
 def generate_response(messages):
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        temperature=0.6
+        temperature=0.7
     )
     return response.choices[0].message.content
 
@@ -62,25 +76,17 @@ def generate_response(messages):
 def transcribe():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ['.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm', '.ogg']:
         return jsonify({'error': 'Unsupported file type'}), 400
-
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         file.save(tmp.name)
         audio_path = tmp.name
-
     with open(audio_path, "rb") as f:
-        transcript_response = openai.audio.transcriptions.create(
-            model="whisper-1",
-            file=f
-        )
-
+        transcript_response = openai.audio.transcriptions.create(model="whisper-1", file=f)
     os.remove(audio_path)
     return jsonify({"text": transcript_response.text})
 
@@ -94,46 +100,84 @@ def chat():
         sessions[user_id] = {
             "messages": [{"role": "system", "content": system_prompt}],
             "fields": {},
-            "current": 0
+            "current": 0,
+            "chat_state": "greeting"
         }
+        if not user_message:
+            user_message = "(بدأ المستخدم المحادثة)"
 
     session = sessions[user_id]
     messages = session["messages"]
-
     messages.append({"role": "user", "content": user_message})
 
-    if session["current"] < len(field_order):
-        current_field_key = field_order[session["current"]]
-        session["fields"][current_field_key] = user_message
+    reply_content = ""
 
-    reply_content = generate_response(messages)
+    if session.get("chat_state") == "greeting":
+        print(f"DEBUG: UserID {user_id} in 'greeting' state. User message: '{user_message}'")
+        reply_content = generate_response(messages)
 
-    # Advance session["current"] if the LLM is expected to have moved on.
-    # The system_prompt guides the LLM to ask for follow-ups on the *same* field if unclear.
-    # If the LLM is satisfied, it moves to the next field or concludes.
-    # We increment `session["current"]` to reflect the next field the user should be providing,
-    # or to mark completion.
-    # This happens *after* the user provides data for the current `session["current"]` index,
-    # and *after* the LLM generates a response based on that.
-    # The new `session["current"]` is what the *next* user message will be for.
+        # Transition condition: AI's reply asks for the first field ("Date").
+        # System prompt guides AI: "...انتقلي لطلب أول معلومة بشكل سلس, وهي تاريخ الحادث..."
+        # Check if AI's reply contains keywords indicating it's asking for the date.
+        # Keywords are based on field_prompts["Date"] and system_prompt guidance.
+        first_field_keywords = ["التاريخ", "تاريخ الحادث", "متى وقع", field_prompts["Date"]]
+        if any(keyword in reply_content for keyword in first_field_keywords) and session["current"] == 0:
+            session["chat_state"] = "collecting_data"
+            print(f"DEBUG: UserID {user_id} Transitioned to 'collecting_data'. AI reply: '{reply_content}'")
+        else:
+            print(f"DEBUG: UserID {user_id} Staying in 'greeting'. AI reply: '{reply_content}'")
+        # No data storage or session["current"] increment in greeting state.
 
-    # Heuristic: if the LLM's reply does not seem to be a clarifying question about the field
-    # we just collected data for, then we can assume it's time to move to the next field index.
-    # For now, we will increment if the current field (before increment) is not the last one.
-    # This relies heavily on the LLM following the prompt to ask for the next field in sequence.
-    if session["current"] < len(field_order) - 1:
-        # We've processed data for field `session["current"]`. If it's not the last field,
-        # the LLM *should* be asking for `session["current"] + 1`. So, update `session["current"]`
-        # to reflect that the *next* user input is for this new index.
-        session["current"] += 1
-    elif session["current"] == len(field_order) - 1:
-        # We've processed data for the *last* field.
-        # The LLM *should* be generating a concluding message.
-        # Increment `session["current"]` to mark that all fields are done.
-        session["current"] += 1 # Now session["current"] == len(field_order)
+    elif session.get("chat_state") == "collecting_data":
+        print(f"DEBUG: UserID {user_id} in 'collecting_data' state for field index {session['current']}. User message: '{user_message}'")
+        if session["current"] < len(field_order):
+            current_field_key = field_order[session["current"]]
+            session["fields"][current_field_key] = user_message
+            print(f"DEBUG: UserID {user_id} Stored user_message='{user_message}' for field='{current_field_key}' at index={session['current']}")
+        else:
+            # This case should ideally not be hit if logic is correct, means trying to store data when all fields are notionally done.
+            print(f"DEBUG: UserID {user_id} Warning: In 'collecting_data' but session['current'] ({session['current']}) is out of bounds.")
+
+        reply_content = generate_response(messages)
+
+        # Increment current *after* data for current_field_key is stored and AI has replied.
+        # This means the *next* user input will be for the *new* session["current"].
+        if session["current"] < len(field_order): # Only advance if current index is valid
+            # Check if data was actually stored for the field we were expecting.
+            # This ensures we only advance if the user provided data for the *expected* field.
+            current_field_key_just_processed = field_order[session["current"]]
+            if current_field_key_just_processed in session["fields"] and \
+               session["fields"].get(current_field_key_just_processed) == user_message:
+
+                if session["current"] < len(field_order) - 1:
+                    session["current"] += 1
+                    print(f"DEBUG: UserID {user_id} Advanced session current to {session['current']} for field {field_order[session['current']]}")
+                elif session["current"] == len(field_order) - 1:
+                    session["current"] += 1
+                    session["chat_state"] = "completed"
+                    print(f"DEBUG: UserID {user_id} All fields processed. session current is now {session['current']}. State: {session['chat_state']}.")
+            else:
+                print(f"DEBUG: UserID {user_id} Data for field {current_field_key_just_processed} not stored or mismatch; not advancing session['current'].")
+        else:
+             print(f"DEBUG: UserID {user_id} session['current'] ({session['current']}) already past end of field_order or invalid.")
+
+
+    elif session.get("chat_state") == "completed":
+        print(f"DEBUG: UserID {user_id} in 'completed' state. User message: '{user_message}'")
+        # If the conversation is 'completed', the AI should ideally just give polite closing remarks.
+        # Or, we could prevent further processing/LLM calls if strict completion is desired.
+        # For now, let it respond. System prompt guides it to give a final message.
+        reply_content = generate_response(messages)
+
+    else: # Should not happen
+        print(f"ERROR: UserID {user_id} Unknown chat_state: {session.get('chat_state')}")
+        reply_content = "حدث خطأ غير متوقع في النظام."
+
 
     messages.append({"role": "assistant", "content": reply_content})
     return jsonify({"reply": reply_content})
+
+# ... (rest of the file remains the same) ...
 
 @app.route("/speak", methods=["POST"])
 def speak():
