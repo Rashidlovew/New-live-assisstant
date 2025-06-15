@@ -161,8 +161,8 @@ def speak():
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
             "stability": 0.4,
-            "similarity_boost": 0.85,
-            "speed": 1.3
+            "similarity_boost": 0.85
+            # "speed": 1.3, // This line is removed
         }
     }
 
@@ -192,50 +192,35 @@ def generate():
     keys_replaced_in_doc = set()
 
     for paragraph in doc.paragraphs:
-        # It's important to handle potential splits of placeholders across multiple runs.
-        # A simple way is to buffer paragraph text and replace, then clear and rewrite runs.
-        # However, to stick to run-level iteration as in original code:
         for key, val in fields.items():
             placeholder = f"{{{{{key}}}}}"
-            # Check and replace in the paragraph's full text first to handle placeholders potentially split across runs.
-            # This is complex with python-docx as run text needs to be modified directly.
-            # The current loop structure might miss placeholders split across runs or format them inconsistently.
-            # For now, sticking to run-by-run replacement logic from original and adding logging.
-
-            # Log presence of key in paragraph text before diving into runs
             if placeholder in paragraph.text:
                 print(f"DEBUG: Placeholder '{placeholder}' found in paragraph: \"{paragraph.text[:100]}...\"")
 
             for run in paragraph.runs:
                 if placeholder in run.text:
                     initial_run_text = run.text
-                    # Ensure val is a string; if None, replace with empty string
                     replacement_value = str(val) if val is not None else ""
                     run.text = run.text.replace(placeholder, replacement_value)
 
                     print(f"DEBUG: Key '{key}': Replaced placeholder in run. Original: '{initial_run_text}', New: '{run.text}'")
                     keys_replaced_in_doc.add(key)
 
-                    # Apply formatting to the run that contained the placeholder
-                    # Note: If placeholder was split, formatting might only apply to the first part.
-                    # The paragraph style is set once if any replacement happens in it.
                     paragraph.paragraph_format.right_to_left = True
-                    paragraph.alignment = 2 # WD_ALIGN_PARAGRAPH.RIGHT in docx.enum.text
+                    paragraph.alignment = 2
 
                     run.font.name = 'Dubai'
                     try:
-                        # Ensure rFonts is correctly accessed and set
                         rpr = run._element.get_or_add_rPr()
                         rFonts = rpr.get_or_add_rFonts()
                         rFonts.set(qn('w:eastAsia'), 'Dubai')
-                        rFonts.set(qn('w:cs'), 'Dubai') # Also for complex script
-                        rFonts.set(qn('w:ascii'), 'Dubai') # Ensure for ascii as well
-                        rFonts.set(qn('w:hAnsi'), 'Dubai') # And high-ansi
+                        rFonts.set(qn('w:cs'), 'Dubai')
+                        rFonts.set(qn('w:ascii'), 'Dubai')
+                        rFonts.set(qn('w:hAnsi'), 'Dubai')
                     except Exception as e:
                         print(f"DEBUG: Error applying font to run for key '{key}': {e}")
                     run.font.size = Pt(13)
 
-    # Log keys from input `fields` that were not found/replaced
     for key_in_fields in fields.keys():
         if key_in_fields not in keys_replaced_in_doc:
             print(f"DEBUG: Key '{key_in_fields}' (value: '{fields[key_in_fields]}') from input fields was NOT found/replaced in the document. Check template placeholder: {{{{{key_in_fields}}}}}")
