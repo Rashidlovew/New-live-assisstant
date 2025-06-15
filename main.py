@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import openai
 import tempfile
@@ -175,6 +175,10 @@ def send_email_with_attachment(file_path):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(sender_email, password)
         server.send_message(msg)
+
+@app.route("/")
+def index():
+    return send_from_directory("static", "index.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
