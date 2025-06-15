@@ -90,9 +90,7 @@ def chat():
     user_message = data.get("message")
 
     if user_id not in sessions:
-        sessions[user_id] = [
-            {"role": "system", "content": system_prompt}
-        ]
+        sessions[user_id] = [{"role": "system", "content": system_prompt}]
 
     sessions[user_id].append({"role": "user", "content": user_message})
     reply = generate_response(sessions[user_id])
@@ -102,17 +100,13 @@ def chat():
 
 @app.route("/speak", methods=["POST"])
 def speak():
-    print("✅ داخل /speak")
     data = request.get_json()
     text = data.get("text")
 
     if not text:
-        print("⚠️ النص فارغ! لا يمكن توليد صوت.")
         return jsonify({"error": "No text provided"}), 400
 
-    print("🎤 النص المرسل إلى ElevenLabs:", text)
-
-    url = "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL"  # Rachel (free voice)
+    url = "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL"
     headers = {
         "xi-api-key": ELEVEN_API_KEY,
         "Content-Type": "application/json"
@@ -126,26 +120,19 @@ def speak():
         }
     }
 
-    try:
-        response = requests.post(url, json=payload, headers=headers)
-        print("📥 Status code:", response.status_code)
-        print("📥 Response text:", response.text)
+    response = requests.post(url, json=payload, headers=headers)
 
-        if response.status_code != 200:
-            return jsonify({
-                "error": "TTS failed",
-                "details": response.text
-            }), 500
+    if response.status_code != 200:
+        return jsonify({
+            "error": "TTS failed",
+            "details": response.text
+        }), 500
 
-        audio_path = os.path.join(tempfile.gettempdir(), "speech.mp3")
-        with open(audio_path, "wb") as f:
-            f.write(response.content)
+    audio_path = os.path.join(tempfile.gettempdir(), "speech.mp3")
+    with open(audio_path, "wb") as f:
+        f.write(response.content)
 
-        return send_file(audio_path, mimetype="audio/mpeg")
-
-    except Exception as e:
-        print("❌ Exception occurred in /speak:", str(e))
-        return jsonify({"error": "Exception", "details": str(e)}), 500
+    return send_file(audio_path, mimetype="audio/mpeg")
 
 @app.route("/generate", methods=["POST"])
 def generate():
