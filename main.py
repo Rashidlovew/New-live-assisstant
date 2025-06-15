@@ -102,12 +102,17 @@ def chat():
 
 @app.route("/speak", methods=["POST"])
 def speak():
+    print("✅ داخل /speak")
     data = request.get_json()
     text = data.get("text")
 
+    if not text:
+        print("⚠️ النص فارغ! لا يمكن توليد صوت.")
+        return jsonify({"error": "No text provided"}), 400
+
     print("🎤 النص المرسل إلى ElevenLabs:", text)
 
-    url = "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL"  # Rachel (free)
+    url = "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL"  # Rachel (free voice)
     headers = {
         "xi-api-key": ELEVEN_API_KEY,
         "Content-Type": "application/json"
