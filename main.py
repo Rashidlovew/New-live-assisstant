@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 from docx import Document
 from docx.shared import Pt
@@ -12,12 +12,16 @@ from email.message import EmailMessage
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='static', template_folder='templates')
 CORS(app)
 
 user_states = {}
 template_path = "police_report_template.docx"
 final_email = "frnreports@gmail.com"
+
+@app.route("/")
+def index():
+    return render_template("index.html")
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
@@ -32,7 +36,7 @@ def transcribe():
 
     conversation = user_states.get(user_id, [])
     conversation.append({"role": "user", "content": text})
-    
+
     system_prompt = (
         "أنت مساعد صوتي ذكي متخصص في كتابة تقارير فنية لقسم الهندسة الجنائية. "
         "اجعل المحادثة طبيعية وودية تبدأ بالترحيب ثم الانتقال بسلاسة لجمع البيانات من المحقق. "
@@ -40,7 +44,7 @@ def transcribe():
         "احرص على فهم نية المستخدم بدون الاعتماد على كلمات محددة فقط. "
         "بعد جمع المعلومات، أخبره أنك سترسل التقرير."
     )
-    
+
     conversation.insert(0, {"role": "system", "content": system_prompt})
 
     response = openai.chat.completions.create(
@@ -52,7 +56,6 @@ def transcribe():
     conversation.append({"role": "assistant", "content": reply})
     user_states[user_id] = conversation
 
-    # Check if report is ready
     if any("سأقوم الآن بإعداد التقرير" in m["content"] for m in conversation):
         save_report_and_email(user_id)
 
@@ -76,9 +79,8 @@ def save_report_and_email(user_id):
     doc = Document(template_path)
     conversation = user_states.get(user_id, [])
     user_texts = [msg["content"] for msg in conversation if msg["role"] == "user"]
-
-    # Replace placeholders with collected text
     full_text = "\n".join(user_texts)
+
     for p in doc.paragraphs:
         if "{{content}}" in p.text:
             p.text = full_text
@@ -89,13 +91,12 @@ def save_report_and_email(user_id):
 
     report_path = f"/tmp/report_{user_id}.docx"
     doc.save(report_path)
-
     send_email(report_path, final_email)
 
 def send_email(filepath, to_email):
     msg = EmailMessage()
     msg["Subject"] = "تقرير هندسي جاهز"
-    msg["From"] = "noreply@aiassistant.com"
+    msg["From"] = os.getenv("EMAIL_USER")
     msg["To"] = to_email
     msg.set_content("تم إعداد التقرير الفني المرفق من خلال المساعد الذكي.")
 
@@ -108,10 +109,6 @@ def send_email(filepath, to_email):
         smtp.starttls()
         smtp.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
         smtp.send_message(msg)
-
-@app.route("/")
-def index():
-    return "👋 Hello from the smart assistant."
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
