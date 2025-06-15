@@ -1,48 +1,64 @@
+// Updated script.js for smart Arabic voice assistant
+
 let mediaRecorder;
 let audioChunks = [];
 const statusDiv = document.getElementById("status");
 const audioPlayback = document.getElementById("audioPlayback");
 
 async function startRecording() {
-  statusDiv.innerText = "🔴 جاري التسجيل... تحدث الآن";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
-  audioChunks = [];
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
 
-  mediaRecorder.ondataavailable = event => {
-    audioChunks.push(event.data);
-  };
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      audioChunks = [];
+      audioPlayback.src = URL.createObjectURL(audioBlob);
+      statusDiv.innerText = "🔁 جاري المعالجة...";
 
-  mediaRecorder.onstop = async () => {
-    statusDiv.innerText = "⏳ جاري المعالجة...";
-    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-    const formData = new FormData();
-    formData.append("audio", audioBlob, "recording.webm");
-    formData.append("user_id", "test_user");
+      const formData = new FormData();
+      formData.append("file", audioBlob, "recording.webm");
 
-    const response = await fetch("/transcribe", {
-      method: "POST",
-      body: formData
-    });
+      try {
+        const transcription = await fetch("/transcribe", {
+          method: "POST",
+          body: formData,
+        });
 
-    const data = await response.json();
-    statusDiv.innerText = data.reply;
+        const transcribed = await transcription.json();
+        const userText = transcribed.text;
 
-    const tts = await fetch("/speak", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: data.reply })
-    });
+        statusDiv.innerText = `📨 تم التعرف: ${userText}`;
 
-    const audioBlobTTS = await tts.blob();
-    audioPlayback.src = URL.createObjectURL(audioBlobTTS);
-    audioPlayback.play();
-  };
+        const response = await fetch("/speak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: userText })
+        });
 
-  mediaRecorder.start();
-  setTimeout(() => {
-    mediaRecorder.stop();
-    stream.getTracks().forEach(track => track.stop());
-  }, 5000);
+        const audioBuffer = await response.arrayBuffer();
+        const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+        audioPlayback.src = URL.createObjectURL(audioBlob);
+        audioPlayback.play();
+      } catch (err) {
+        statusDiv.innerText = "❌ حدث خطأ أثناء المعالجة.";
+        console.error(err);
+      }
+    };
+
+    mediaRecorder.start();
+    statusDiv.innerText = "🎙️ جاري التسجيل... تكلم الآن";
+
+    setTimeout(() => {
+      mediaRecorder.stop();
+      statusDiv.innerText = "⏹️ تم إنهاء التسجيل.";
+    }, 5000); // تسجيل 5 ثواني
+  } catch (error) {
+    statusDiv.innerText = "⚠️ لم يتم الوصول إلى الميكروفون.";
+    console.error(error);
+  }
 }
