@@ -1,5 +1,3 @@
-// script.js
-
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
@@ -32,19 +30,23 @@ async function startRecording() {
         method: "POST",
         body: formData
       });
-      const transcribeData = await transcribeRes.json();
 
+      const transcribeData = await transcribeRes.json();
+      console.log("📝 النص:", transcribeData.text); // للتأكد
+
+      // ✅ استخدم النص من transcribeData.text وليس reply
       const speakRes = await fetch("/speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: transcribeData.reply })
+        body: JSON.stringify({ text: transcribeData.text })
       });
+
       const speakBlob = await speakRes.blob();
       const audioUrl = URL.createObjectURL(speakBlob);
 
       audioPlayback.src = audioUrl;
       audioPlayback.play();
-      statusDiv.innerText = transcribeData.reply;
+      statusDiv.innerText = transcribeData.text;
 
     } catch (error) {
       console.error("❌ Error:", error);
