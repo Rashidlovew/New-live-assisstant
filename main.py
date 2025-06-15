@@ -1,3 +1,4 @@
+# === Updated main.py with smart assistant flow ===
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import openai
@@ -22,13 +23,18 @@ CORS(app)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
 
+field_order = [
+    "Date", "Briefing", "LocationObservations",
+    "Examination", "Outcomes", "TechincalOpinion"
+]
+
 field_prompts = {
-    "Date": "متى وقع الحادث؟",
-    "Briefing": "أخبرني باختصار عن الحادث.",
-    "LocationObservations": "ماذا لاحظت عند معاينة الموقع؟",
-    "Examination": "ما هي نتائج الفحص الفني؟",
-    "Outcomes": "ما الذي توصلت إليه بعد الفحص؟",
-    "TechincalOpinion": "ما هو رأيك الفني في الحادث؟"
+    "Date": "🎙️ أرسل تاريخ الواقعة.",
+    "Briefing": "🎙️ أرسل موجز الواقعة.",
+    "LocationObservations": "🎙️ أرسل معاينة الموقع حيث بمعاينة موقع الحادث تبين ما يلي .....",
+    "Examination": "🎙️ أرسل نتيجة الفحص الفني ... حيث بفحص موضوع الحادث تبين ما يلي .....",
+    "Outcomes": "🎙️ أرسل النتيجة حيث أنه بعد المعاينة و أجراء الفحوص الفنية اللازمة تبين ما يلي:.",
+    "TechincalOpinion": "🎙️ أرسل الرأي الفني."
 }
 
 field_names_ar = {
@@ -40,14 +46,12 @@ field_names_ar = {
     "TechincalOpinion": "الرأي الفني"
 }
 
+sessions = {}
+
 system_prompt = (
     "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود."
-    " وظيفتك التحدث مع المستخدم بشكل عام ومريح، وتوجيه الحديث لجمع المعلومات اللازمة لتقرير هندسي جنائي."
-    " لا تسألي الأسئلة كأنها استبيان مباشر، بل اجعلي الحديث انسيابيًا كأنك إنسانة تتحدث بلطف واحتراف."
-    " خلال الحديث، اجمعي البيانات المطلوبة للتقرير دون مقاطعة أسلوب المحادثة، واحتفظي بكل معلومة تحصلين عليها."
+    " وظيفتك جمع معلومات التقرير من المستخدم بطريقة محادثة ذكية ولطيفة، حقلًا تلو الآخر."
 )
-
-sessions = {}
 
 def generate_response(messages):
     response = openai.chat.completions.create(
@@ -90,12 +94,31 @@ def chat():
     user_message = data.get("message")
 
     if user_id not in sessions:
-        sessions[user_id] = [{"role": "system", "content": system_prompt}]
+        sessions[user_id] = {
+            "messages": [{"role": "system", "content": system_prompt}],
+            "fields": {},
+            "current": 0
+        }
 
-    sessions[user_id].append({"role": "user", "content": user_message})
-    reply = generate_response(sessions[user_id])
-    sessions[user_id].append({"role": "assistant", "content": reply})
+    session = sessions[user_id]
+    messages = session["messages"]
+    messages.append({"role": "user", "content": user_message})
 
+    # Save user input to the current field
+    current_field = field_order[session["current"]]
+    session["fields"][current_field] = user_message
+
+    # Advance to next field
+    session["current"] += 1
+    if session["current"] < len(field_order):
+        next_field = field_order[session["current"]]
+        next_prompt = field_prompts[next_field]
+        messages.append({"role": "assistant", "content": next_prompt})
+        reply = next_prompt
+    else:
+        reply = "✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير..."
+
+    messages.append({"role": "assistant", "content": reply})
     return jsonify({"reply": reply})
 
 @app.route("/speak", methods=["POST"])
@@ -115,18 +138,14 @@ def speak():
         "text": text,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75
+            "stability": 0.4,
+            "similarity_boost": 0.85
         }
     }
 
     response = requests.post(url, json=payload, headers=headers)
-
     if response.status_code != 200:
-        return jsonify({
-            "error": "TTS failed",
-            "details": response.text
-        }), 500
+        return jsonify({"error": "TTS failed", "details": response.text}), 500
 
     audio_path = os.path.join(tempfile.gettempdir(), "speech.mp3")
     with open(audio_path, "wb") as f:
@@ -137,11 +156,11 @@ def speak():
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.get_json()
-    inputs = data.get("fields", {})
+    fields = data.get("fields")
 
     doc = Document("police_report_template.docx")
     for paragraph in doc.paragraphs:
-        for key, val in inputs.items():
+        for key, val in fields.items():
             if f"{{{{{key}}}}}" in paragraph.text:
                 for run in paragraph.runs:
                     if f"{{{{{key}}}}}" in run.text:
@@ -166,9 +185,7 @@ def send_email_with_attachment(file_path):
     msg['From'] = sender_email
     msg['To'] = receiver_email
     msg['Subject'] = "📄 تقرير جديد من المساعد الذكي"
-
-    body = "تم إرفاق التقرير الفني الذي تم إنشاؤه تلقائيًا من قبل المساعد الذكي."
-    msg.attach(MIMEText(body, 'plain'))
+    msg.attach(MIMEText("تم إرفاق التقرير الفني الذي تم إنشاؤه تلقائيًا.", 'plain'))
 
     with open(file_path, "rb") as attachment:
         part = MIMEBase('application', 'octet-stream')
@@ -180,6 +197,14 @@ def send_email_with_attachment(file_path):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(sender_email, password)
         server.send_message(msg)
+
+@app.route("/get-session", methods=["GET"])
+def get_session():
+    user_id = request.args.get("user_id")
+    session = sessions.get(user_id)
+    if session:
+        return jsonify(session)
+    return jsonify({"error": "Session not found"}), 404
 
 @app.route("/")
 def index():
