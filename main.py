@@ -27,9 +27,10 @@ field_order = [
     "Examination", "Outcomes", "TechincalOpinion"
 ]
 
+# Reverted field_prompts to be more direct
 field_prompts = {
-    "Date": "🎙️ لنبدأ بالتاريخ، متى وقع الحادث تقريبًا؟",
-    "Briefing": "🎙️ شكرًا لك. والآن، هل يمكنك أن تعطيني موجزًا لما حدث؟",
+    "Date": "🎙️ أرسل تاريخ الواقعة.",
+    "Briefing": "🎙️ أرسل موجز الواقعة.",
     "LocationObservations": "🎙️ أرسل معاينة الموقع حيث بمعاينة موقع الحادث تبين ما يلي .....",
     "Examination": "🎙️ أرسل نتيجة الفحص الفني ... حيث بفحص موضوع الحادث تبين ما يلي .....",
     "Outcomes": "🎙️ أرسل النتيجة حيث أنه بعد المعاينة و أجراء الفحوص الفنية اللازمة تبين ما يلي:.",
@@ -38,29 +39,16 @@ field_prompts = {
 
 sessions = {}
 
+# New direct system_prompt
 system_prompt = (
-    "أنتِ مساعد AI متخصص في قسم الهندسة الجنائية، صوتك طبيعي ودافئ، وأسلوبك يجمع بين المهنية والتعاطف العميق."
-    " مهمتك الأساسية هي مساعدة المستخدم في تقديم معلومات لتقرير فني، ولكن الأهم من ذلك هو أن يشعر المستخدم بالدعم والراحة خلال هذه العملية."
-
-    "**بدء المحادثة:**"
-    "ابدئي المحادثة بتحية ودية ومبادرة إنسانية بسيطة. على سبيل المثال: 'مرحباً بك، أنا هنا لمساعدتك في إعداد تقريرك. قبل أن نبدأ في التفاصيل، كيف حالك اليوم؟' أو 'أهلاً بك، أفهم أنك بحاجة لتقديم معلومات لتقرير. أود أن أطمئن عليك أولاً، أتمنى أن تكون بخير.' انتظري رد المستخدم على هذا المدخل الأولي، وتفاعلي معه بشكل مناسب ومختصر."
-    "بعد هذا التفاعل الأولي، انتقلي لطلب أول معلومة بشكل سلس, وهي تاريخ الحادث, مستخدمة كنقطة انطلاق \"لنبدأ بالتاريخ، متى وقع الحادث تقريبًا؟\" ولكن بصياغتك الطبيعية. يجب أن تذكري كلمة 'التاريخ' أو 'تاريخ الحادث' عند طلب هذه المعلومة لأول مرة."
-
-    "**جمع المعلومات:**"
-    "عندما يحين وقت جمع المعلومات، تجنبي تمامًا أسلوب طرح الأسئلة المباشرة والمتتالية كأنكِ تملئين قائمة. هدفك هو أن تدمجي طلب المعلومات ضمن حوار طبيعي ومتدفق."
-    "لكل معلومة يقدمها المستخدم (مثلاً عن 'التاريخ'):"
-    "1. قدمي إقرارًا واضحًا وموجزًا بما قاله المستخدم (مثلاً: 'حسنًا، تاريخ الواقعة هو [التاريخ الذي ذكره المستخدم].')."
-    "2. إذا كانت إجابته مختصرة جدًا أو غير واضحة، اطرحي سؤال متابعة مفتوح لتستوضحي أكثر عن *نفس النقطة* قبل الانتقال (مثلاً: 'هل يمكنك توضيح هذه النقطة أكثر قليلاً؟')."
-    "3. إذا كانت المعلومة واضحة، أو بعد الاستيضاح، قدمي تعليقًا قصيرًا يُظهر التعاطف أو الاهتمام (مثلاً: 'شكرًا لك على توضيح ذلك.' أو 'أتفهم أن تذكر هذه التفاصيل قد يكون صعبًا.') ثم انتقلي بلطف لطلب المعلومة التالية."
-    "مثال للانتقال: 'شكرًا لمشاركتنا هذه المعلومة. عندما تكون مستعدًا، هل يمكننا التحدث قليلاً عن [اسم الحقل التالي بصيغة طبيعية، مثلاً \"ملخص الحادث\" بدلاً من Briefing]؟' أو 'أتفهم. الآن، إذا سمحت، ننتقل إلى [اسم الحقل التالي بصيغة طبيعية].'"
-    "عند طلب معلومة جديدة، استخدمي نص السؤال من `field_prompts` كدليل للمعنى المطلوب ولكن أعيدي صياغته بأسلوبك الحواري الطبيعي بدلاً من ترديده حرفياً."
-
-    "**الأسلوب العام:**"
-    "حافظي على هدوئك وصبرك طوال المحادثة. شجعي المستخدم على التحدث بحرية، وأكدي له أن بإمكانه أخذ وقته."
-    "تذكري، أنتِ لستِ مجرد آلة لجمع البيانات، بل مساعد متعاطف. يجب أن يشعر المستخدم أنه يتحدث مع شخص يهتم به حقًا."
-    "يجب جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
-    "عندما يتم جمع كل الحقول بنجاح، قومي بتأكيد استلام المعلومة الأخيرة، ثم أعلني بشكل واضح وودي عن اكتمال جمع البيانات وأن التقرير سيتم إعداده (مثلاً: 'شكرًا جزيلاً لك على كل هذه المعلومات. ✅ لقد تم استلام جميع البيانات اللازمة. سأقوم الآن بإعداد التقرير لك...')."
-    "استخدمي هذه التعليمات في كل رد من ردودك لضمان تجربة سلسة وداعمة للمستخدم."
+    "أنت مساعد AI متخصص في قسم الهندسة الجنائية. مهمتك هي جمع المعلومات اللازمة لإعداد تقرير فني بكفاءة ومهنية."
+    " ستطرح الأسئلة على المستخدم حقلًا تلو الآخر."
+    " عند بدء المحادثة لأول مرة (عندما يكون تاريخ الرسائل فارغًا باستثناء رسالة النظام هذه ورسالة المستخدم الأولى), يجب أن يكون ردك الأول هو طلب المعلومة الأولى مباشرة وهي 'تاريخ الحادث'. استخدم صياغة مثل: 'أنا هنا لمساعدتك في إعداد تقرير الهندسة الجنائية. لنبدأ، يرجى تقديم تاريخ الحادث.'"
+    " لكل معلومة يقدمها المستخدم بعد ذلك، قم بتأكيد مقتضب (مثال: 'تم تسجيل التاريخ.') ثم انتقل مباشرة لطلب المعلومة التالية بالترتيب المحدد."
+    " إذا كانت إجابة المستخدم غير واضحة، اطلب منه التوضيح بلطف ثم كرر طلب نفس المعلومة قبل المتابعة."
+    " يجب جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
+    " عند استلام جميع الحقول، أعلن عن اكتمال جمع البيانات وأن التقرير سيتم إعداده، مثلاً: 'شكراً لك، تم استلام جميع البيانات. يتم الآن إعداد التقرير.'"
+    " مثال لطلب معلومة تالية: 'الآن، يرجى تقديم موجز للحادث.'"
 )
 
 
@@ -68,7 +56,7 @@ def generate_response(messages):
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        temperature=0.7
+        temperature=0.5 # Adjusted temperature for more directness
     )
     return response.choices[0].message.content
 
@@ -100,51 +88,39 @@ def chat():
         sessions[user_id] = {
             "messages": [{"role": "system", "content": system_prompt}],
             "fields": {},
-            "current": 0,
-            "chat_state": "greeting"
+            "current": 0, # Starts at 0, expecting "Date"
+            "chat_state": "collecting_data" # Start directly in collecting_data state
         }
         if not user_message:
             user_message = "(بدأ المستخدم المحادثة)"
+        print(f"DEBUG: UserID {user_id} New session. Initial user_message: '{user_message}'. State: {sessions[user_id]['chat_state']}")
 
     session = sessions[user_id]
     messages = session["messages"]
-    messages.append({"role": "user", "content": user_message})
 
+    should_store_data = True
+    if len(messages) == 1:
+        should_store_data = False
+        print(f"DEBUG: UserID {user_id} First effective user interaction. Not storing this message as field data. User message: '{user_message}'")
+
+    messages.append({"role": "user", "content": user_message})
     reply_content = ""
 
-    if session.get("chat_state") == "greeting":
-        print(f"DEBUG: UserID {user_id} in 'greeting' state. User message: '{user_message}'")
-        reply_content = generate_response(messages)
+    if session.get("chat_state") == "collecting_data":
+        print(f"DEBUG: UserID {user_id} In 'collecting_data' state for field index {session['current']}. User message: '{user_message}'")
 
-        # Transition condition: AI's reply asks for the first field ("Date").
-        # System prompt guides AI: "...انتقلي لطلب أول معلومة بشكل سلس, وهي تاريخ الحادث..."
-        # Check if AI's reply contains keywords indicating it's asking for the date.
-        # Keywords are based on field_prompts["Date"] and system_prompt guidance.
-        first_field_keywords = ["التاريخ", "تاريخ الحادث", "متى وقع", field_prompts["Date"]]
-        if any(keyword in reply_content for keyword in first_field_keywords) and session["current"] == 0:
-            session["chat_state"] = "collecting_data"
-            print(f"DEBUG: UserID {user_id} Transitioned to 'collecting_data'. AI reply: '{reply_content}'")
-        else:
-            print(f"DEBUG: UserID {user_id} Staying in 'greeting'. AI reply: '{reply_content}'")
-        # No data storage or session["current"] increment in greeting state.
-
-    elif session.get("chat_state") == "collecting_data":
-        print(f"DEBUG: UserID {user_id} in 'collecting_data' state for field index {session['current']}. User message: '{user_message}'")
-        if session["current"] < len(field_order):
+        if should_store_data and session["current"] < len(field_order):
             current_field_key = field_order[session["current"]]
             session["fields"][current_field_key] = user_message
             print(f"DEBUG: UserID {user_id} Stored user_message='{user_message}' for field='{current_field_key}' at index={session['current']}")
+        elif not should_store_data:
+            print(f"DEBUG: UserID {user_id} In 'collecting_data' but should_store_data is false. Not storing. This is likely the initial user utterance before AI asks for first field.")
         else:
-            # This case should ideally not be hit if logic is correct, means trying to store data when all fields are notionally done.
-            print(f"DEBUG: UserID {user_id} Warning: In 'collecting_data' but session['current'] ({session['current']}) is out of bounds.")
+             print(f"DEBUG: UserID {user_id} Warning: In 'collecting_data' but session['current'] ({session['current']}) is out of bounds for storing.")
 
         reply_content = generate_response(messages)
 
-        # Increment current *after* data for current_field_key is stored and AI has replied.
-        # This means the *next* user input will be for the *new* session["current"].
-        if session["current"] < len(field_order): # Only advance if current index is valid
-            # Check if data was actually stored for the field we were expecting.
-            # This ensures we only advance if the user provided data for the *expected* field.
+        if should_store_data and session["current"] < len(field_order):
             current_field_key_just_processed = field_order[session["current"]]
             if current_field_key_just_processed in session["fields"] and \
                session["fields"].get(current_field_key_just_processed) == user_message:
@@ -156,28 +132,16 @@ def chat():
                     session["current"] += 1
                     session["chat_state"] = "completed"
                     print(f"DEBUG: UserID {user_id} All fields processed. session current is now {session['current']}. State: {session['chat_state']}.")
-            else:
-                print(f"DEBUG: UserID {user_id} Data for field {current_field_key_just_processed} not stored or mismatch; not advancing session['current'].")
-        else:
-             print(f"DEBUG: UserID {user_id} session['current'] ({session['current']}) already past end of field_order or invalid.")
-
 
     elif session.get("chat_state") == "completed":
         print(f"DEBUG: UserID {user_id} in 'completed' state. User message: '{user_message}'")
-        # If the conversation is 'completed', the AI should ideally just give polite closing remarks.
-        # Or, we could prevent further processing/LLM calls if strict completion is desired.
-        # For now, let it respond. System prompt guides it to give a final message.
         reply_content = generate_response(messages)
-
-    else: # Should not happen
+    else:
         print(f"ERROR: UserID {user_id} Unknown chat_state: {session.get('chat_state')}")
         reply_content = "حدث خطأ غير متوقع في النظام."
 
-
     messages.append({"role": "assistant", "content": reply_content})
     return jsonify({"reply": reply_content})
-
-# ... (rest of the file remains the same) ...
 
 @app.route("/speak", methods=["POST"])
 def speak():
@@ -197,7 +161,8 @@ def speak():
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
             "stability": 0.4,
-            "similarity_boost": 0.85
+            "similarity_boost": 0.85,
+            "speed": 1.3
         }
     }
 
@@ -215,23 +180,70 @@ def speak():
 def generate():
     data = request.get_json()
     fields = data.get("fields")
+    print(f"DEBUG: /generate received fields: {fields}")
 
-    doc = Document("police_report_template.docx")
+    if not fields:
+        print("DEBUG: /generate called with no fields data.")
+        # For robust handling, ensure fields is at least an empty dict if None
+        fields = {}
+
+    doc = Document("police_report_template.docx") # Load template
+
+    keys_replaced_in_doc = set()
+
     for paragraph in doc.paragraphs:
+        # It's important to handle potential splits of placeholders across multiple runs.
+        # A simple way is to buffer paragraph text and replace, then clear and rewrite runs.
+        # However, to stick to run-level iteration as in original code:
         for key, val in fields.items():
-            if f"{{{{{key}}}}}" in paragraph.text:
-                for run in paragraph.runs:
-                    if f"{{{{{key}}}}}" in run.text:
-                        run.text = run.text.replace(f"{{{{{key}}}}}", val)
-                        paragraph.paragraph_format.right_to_left = True
-                        paragraph.alignment = 2
-                        run.font.name = 'Dubai'
-                        run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Dubai')
-                        run.font.size = Pt(13)
+            placeholder = f"{{{{{key}}}}}"
+            # Check and replace in the paragraph's full text first to handle placeholders potentially split across runs.
+            # This is complex with python-docx as run text needs to be modified directly.
+            # The current loop structure might miss placeholders split across runs or format them inconsistently.
+            # For now, sticking to run-by-run replacement logic from original and adding logging.
+
+            # Log presence of key in paragraph text before diving into runs
+            if placeholder in paragraph.text:
+                print(f"DEBUG: Placeholder '{placeholder}' found in paragraph: \"{paragraph.text[:100]}...\"")
+
+            for run in paragraph.runs:
+                if placeholder in run.text:
+                    initial_run_text = run.text
+                    # Ensure val is a string; if None, replace with empty string
+                    replacement_value = str(val) if val is not None else ""
+                    run.text = run.text.replace(placeholder, replacement_value)
+
+                    print(f"DEBUG: Key '{key}': Replaced placeholder in run. Original: '{initial_run_text}', New: '{run.text}'")
+                    keys_replaced_in_doc.add(key)
+
+                    # Apply formatting to the run that contained the placeholder
+                    # Note: If placeholder was split, formatting might only apply to the first part.
+                    # The paragraph style is set once if any replacement happens in it.
+                    paragraph.paragraph_format.right_to_left = True
+                    paragraph.alignment = 2 # WD_ALIGN_PARAGRAPH.RIGHT in docx.enum.text
+
+                    run.font.name = 'Dubai'
+                    try:
+                        # Ensure rFonts is correctly accessed and set
+                        rpr = run._element.get_or_add_rPr()
+                        rFonts = rpr.get_or_add_rFonts()
+                        rFonts.set(qn('w:eastAsia'), 'Dubai')
+                        rFonts.set(qn('w:cs'), 'Dubai') # Also for complex script
+                        rFonts.set(qn('w:ascii'), 'Dubai') # Ensure for ascii as well
+                        rFonts.set(qn('w:hAnsi'), 'Dubai') # And high-ansi
+                    except Exception as e:
+                        print(f"DEBUG: Error applying font to run for key '{key}': {e}")
+                    run.font.size = Pt(13)
+
+    # Log keys from input `fields` that were not found/replaced
+    for key_in_fields in fields.keys():
+        if key_in_fields not in keys_replaced_in_doc:
+            print(f"DEBUG: Key '{key_in_fields}' (value: '{fields[key_in_fields]}') from input fields was NOT found/replaced in the document. Check template placeholder: {{{{{key_in_fields}}}}}")
 
     output_path = os.path.join(tempfile.gettempdir(), "final_report.docx")
     doc.save(output_path)
-    send_email_with_attachment(output_path)
+    print(f"DEBUG: Report saved to {output_path}")
+    # send_email_with_attachment(output_path) # Temporarily commented out
     return send_file(output_path, as_attachment=True)
 
 def send_email_with_attachment(file_path):
