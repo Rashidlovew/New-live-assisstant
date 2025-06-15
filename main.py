@@ -105,7 +105,9 @@ def speak():
     data = request.get_json()
     text = data.get("text")
 
-    url = "https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB"
+    print("🎤 النص المرسل إلى ElevenLabs:", text)
+
+    url = "https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnSDxMaL"  # Rachel (free)
     headers = {
         "xi-api-key": ELEVEN_API_KEY,
         "Content-Type": "application/json"
@@ -122,7 +124,7 @@ def speak():
     response = requests.post(url, json=payload, headers=headers)
 
     if response.status_code != 200:
-        print("❌ ElevenLabs Error:", response.text)  # سجل محتوى الخطأ في اللوج
+        print("❌ ElevenLabs Error:", response.text)
         return jsonify({
             "error": "TTS failed",
             "details": response.text
