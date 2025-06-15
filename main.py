@@ -1,4 +1,3 @@
-# === Updated main.py with smart assistant flow ===
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 import openai
@@ -37,20 +36,15 @@ field_prompts = {
     "TechincalOpinion": "🎙️ أرسل الرأي الفني."
 }
 
-field_names_ar = {
-    "Date": "التاريخ",
-    "Briefing": "موجز الواقعة",
-    "LocationObservations": "معاينة الموقع",
-    "Examination": "نتيجة الفحص الفني",
-    "Outcomes": "النتيجة",
-    "TechincalOpinion": "الرأي الفني"
-}
-
 sessions = {}
 
 system_prompt = (
     "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود."
-    " وظيفتك جمع معلومات التقرير من المستخدم بطريقة محادثة ذكية ولطيفة، حقلًا تلو الآخر."
+    " وظيفتك التحدث مع المستخدم بشكل محاورة عامة وعفوية لجمع معلومات التقرير،"
+    " حقلًا تلو الآخر دون أن يشعر المستخدم أن هناك نموذج يتم تعبئته."
+    " شجعيه على الحديث بحرية، واطرحي أسئلة ذكية داخل السياق دون إزعاج."
+    " لا تكرري نفس السؤال إذا أجاب، بل تابعي إلى الخطوة التالية بسلاسة."
+    " تأكدي من جمع كل الحقول التالية: التاريخ، موجز الواقعة، معاينة الموقع، نتيجة الفحص، النتيجة، والرأي الفني."
 )
 
 def generate_response(messages):
@@ -104,11 +98,9 @@ def chat():
     messages = session["messages"]
     messages.append({"role": "user", "content": user_message})
 
-    # Save user input to the current field
     current_field = field_order[session["current"]]
     session["fields"][current_field] = user_message
 
-    # Advance to next field
     session["current"] += 1
     if session["current"] < len(field_order):
         next_field = field_order[session["current"]]
