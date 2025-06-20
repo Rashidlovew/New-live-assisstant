@@ -27,7 +27,7 @@ field_order = [
     "Examination", "Outcomes", "TechincalOpinion"
 ]
 
-# field_prompts are kept for reference but system_prompt dictates exact phrasing
+# field_prompts are kept for reference for the AI
 field_prompts = {
     "Date": "🎙️ أرسل تاريخ الواقعة.",
     "Briefing": "🎙️ أرسل موجز الواقعة.",
@@ -39,22 +39,29 @@ field_prompts = {
 
 sessions = {}
 
-# Hyper-restrictive system_prompt
+# System prompt with polite Arabic acknowledgments
 system_prompt = (
-    "أنت روبوت لجمع البيانات. مهمتك الوحيدة هي طلب معلومات لحقول محددة بالترتيب التالي الصارم: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
-    "عندما تبدأ محادثة جديدة (أي عندما تكون رسالتك هي الأولى بعد رسالة النظام ورسالة المستخدم الأولية), اطرح السؤال عن الحقل الأول 'Date' مباشرةً مستخدمًا العبارة التالية بالضبط: 'يرجى تقديم تاريخ الحادث.'"
-    "بعد أن يقدم المستخدم معلومة لأي حقل، يجب أن يكون ردك هو تأكيد استلام المعلومة والانتقال مباشرةً لطلب الحقل التالي بالترتيب. استخدم صياغة مثل: 'تم استلام [اسم الحقل الذي تم استلامه]. الآن، يرجى تقديم [اسم الحقل التالي].'"
-    "استخدم العبارات التالية بالضبط عند طلب كل حقل:"
-    "- لطلب Date (بعد الرد الأولية): 'يرجى تقديم تاريخ الحادث.'" # This is the AI's very first spoken line.
-    "- لطلب Briefing: 'تم استلام Date. الآن، يرجى تقديم موجز الواقعة.'" # Note: Use the actual field name 'Date' not its Arabic translation in this confirmation part.
-    "- لطلب LocationObservations: 'تم استلام Briefing. الآن، يرجى تقديم معاينة الموقع.'"
-    "- لطلب Examination: 'تم استلام LocationObservations. الآن، يرجى تقديم نتيجة الفحص الفني.'"
-    "- لطلب Outcomes: 'تم استلام Examination. الآن، يرجى تقديم النتيجة.'"
-    "- لطلب TechincalOpinion: 'تم استلام Outcomes. الآن، يرجى تقديم الرأي الفني.'"
-    "لا تقم بإضافة أي كلمات إضافية، لا تحيات، لا تعليقات، لا أسئلة توضيحية، ولا أي نوع من الحوار خارج هذا النمط المحدد."
-    "إذا كانت إجابة المستخدم غير واضحة أو فارغة، كرر نفس سؤال الحقل الحالي بالضبط."
-    "بعد أن يقدم المستخدم معلومات حقل 'TechincalOpinion'، ردك الوحيد والأخير يجب أن يكون بالضبط: '✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...'"
-    "لا تستخدم أي رموز emoji إلا في الرسالة النهائية."
+    "أنت مساعد AI متخصص في قسم الهندسة الجنائية. مهمتك هي جمع المعلومات اللازمة لإعداد تقرير فني بكفاءة ومهنية عالية، والتحدث باللغة العربية عند طلب الحقول وتقديم الإقرارات."
+    "ستقوم بطلب المعلومات من المستخدم حقلًا تلو الآخر بالترتيب التالي: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
+
+    "**قواعد صارمة للتفاعل:**"
+    "1.  **الطلب الأول:** عندما تبدأ محادثة جديدة (أي عندما تكون رسالتك هي الأولى بعد رسالة النظام ورسالة المستخدم الأولية), يجب أن يكون ردك الأول هو طلب المعلومة الأولى 'Date' باستخدام صياغة عربية واضحة. مثال: 'أنا هنا لمساعدتك في إعداد تقرير الهندسة الجنائية. لنبدأ، يرجى تقديم تاريخ الواقعة.'"
+    "2.  **الإقرار وطلب الحقل التالي:** بعد أن يقدم المستخدم معلومة لأي حقل، يجب أن تبدأ ردك بعبارة إقرار موجزة ومهذبة باللغة العربية. أمثلة على الإقرارات: 'شكراً لك.'، 'شكراً، تم استلام [اسم الحقل الذي تم استلامه باللغة العربية].'، 'معلومة مفيدة، شكراً لك.'، 'حسنًا، تم تسجيل ذلك.'."
+    "    بعد الإقرار مباشرةً، انتقل لطلب الحقل التالي بالترتيب المحدد، مستخدمًا الصياغة العربية المحددة لذلك الحقل."
+    "    مثال كامل (بعد استلام التاريخ): 'شكراً لك على تقديم التاريخ. الآن، يرجى تقديم موجز الواقعة.'"
+    "    مثال آخر (بعد استلام موجز الواقعة): 'شكراً، تم استلام موجز الواقعة. الآن، يرجى تقديم معاينة الموقع.'"
+    "3.  **استخدام اللغة العربية للحقول:** عند طلب أي حقل من المستخدم (المشار إليها داخلياً بالأسماء الإنجليزية: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion)، يجب أن تستخدم صياغة عربية للسؤال. لا تستخدم الكلمات الإنجليزية لهذه الحقول في أسئلتك الموجهة للمستخدم. يمكنك الاعتماد على المعنى من النصوص العربية المتوفرة في `field_prompts` كمرجع لصياغة أسئلتك باللغة العربية."
+    "    - مثال لطلب حقل 'Date': 'يرجى تقديم تاريخ الواقعة.'"
+    "    - مثال لطلب حقل 'Briefing': 'يرجى تقديم موجز الواقعة.'"
+    "    - مثال لطلب حقل 'LocationObservations': 'يرجى تقديم معاينة الموقع.'"
+    "    - مثال لطلب حقل 'Examination': 'يرجى تقديم نتيجة الفحص الفني.'"
+    "    - مثال لطلب حقل 'Outcomes': 'يرجى تقديم النتيجة.'"
+    "    - مثال لطلب حقل 'TechincalOpinion': 'يرجى تقديم الرأي الفني.'"
+    "4.  **الإيجاز:** يجب أن تكون إقراراتك وأسئلتك موجزة ومباشرة. لا تقم بإضافة أي كلمات إضافية، لا تحيات مطولة، لا تعليقات لا داعي لها، ولا أي نوع من الحوار خارج هذا النمط المحدد والمباشر."
+    "5.  **الوضوح:** إذا كانت إجابة المستخدم غير واضحة أو فارغة، لا تقدم إقرارًا. بدلاً من ذلك، كرر نفس سؤال الحقل الحالي بصيغة عربية واضحة."
+    "6.  **الختام:** بعد أن يقدم المستخدم معلومات حقل 'TechincalOpinion'، وبعد تقديم الإقرار المناسب لهذا الحقل (مثال: 'شكراً، تم استلام الرأي الفني.')، يجب أن يكون ردك الوحيد والأخير بالضبط: '✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...'"
+    "7.  **الرموز التعبيرية:** لا تستخدم أي رموز emoji إلا في الرسالة النهائية المذكورة أعلاه."
+    "التزم بهذه التعليمات بدقة لضمان عملية جمع بيانات فعالة وواضحة ومهذبة."
 )
 
 
@@ -62,7 +69,7 @@ def generate_response(messages):
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        temperature=0.0 # Set temperature to 0 for deterministic, direct responses
+        temperature=0.2 # Adjusted temperature for adherence to instructions
     )
     return response.choices[0].message.content
 
@@ -105,8 +112,6 @@ def chat():
     messages = session["messages"]
 
     should_store_data = True
-    # The first message from user is just for the AI to react and ask the first question.
-    # messages initially only has system prompt.
     if len(messages) == 1:
         should_store_data = False
         print(f"DEBUG: UserID {user_id} First effective user interaction. Not storing this message ('{user_message}') as field data.")
@@ -130,8 +135,11 @@ def chat():
 
         if should_store_data and session["current"] < len(field_order):
             current_field_key_just_processed = field_order[session["current"]]
+            # Check if data was actually stored for the field we were expecting.
+            # This condition also implies that user_message was not empty/None if it was stored.
             if current_field_key_just_processed in session["fields"] and \
-               session["fields"].get(current_field_key_just_processed) == user_message:
+               session["fields"].get(current_field_key_just_processed) == user_message and \
+               user_message.strip() != "": # Ensure non-empty message was processed
 
                 if session["current"] < len(field_order) - 1:
                     session["current"] += 1
@@ -141,23 +149,15 @@ def chat():
                     session["chat_state"] = "completed"
                     print(f"DEBUG: UserID {user_id} All fields processed. session current is now {session['current']}. State: {session['chat_state']}.")
             else:
-                # This case might occur if should_store_data was true but for some reason the data wasn't stored (e.g. bad index)
-                # Or if user_message was an empty string that got stored, then this check fails.
-                # For a hyper-restrictive bot, this scenario means user provided something, it was stored. We should advance.
-                # The system_prompt now says "If the user's answer is unclear or empty, repeat the same field question."
-                # This means the LLM itself should handle not moving to the next prompt.
-                # So, Python logic for advancing session["current"] should be simpler: if data was stored, LLM will be told to ask next.
-                print(f"DEBUG: UserID {user_id} Data for field {current_field_key_just_processed} was expected to be stored but condition failed. User message: '{user_message}', Stored: '{session['fields'].get(current_field_key_just_processed)}'. Not advancing session['current']. LLM should handle re-asking.")
+                # If user_message was empty, or data not stored, LLM should re-ask (due to system_prompt rule 5)
+                print(f"DEBUG: UserID {user_id} Data for field {current_field_key_just_processed} not stored, or was empty, or mismatch. Not advancing session['current']. LLM should handle re-asking. User message: '{user_message}'")
 
     elif session.get("chat_state") == "completed":
         print(f"DEBUG: UserID {user_id} in 'completed' state. User message: '{user_message}'")
-        # System prompt dictates the AI's final message. If user speaks after that, AI might respond based on general knowledge.
-        # To ensure it doesn't engage further, we could just return a fixed message or the last AI message.
-        # For now, let LLM generate based on its last "completed" message in history.
         if messages[-2]["role"] == "assistant" and messages[-2]["content"].startswith("✅ تم استلام جميع البيانات."):
-            reply_content = messages[-2]["content"] # Repeat the completion message
+            reply_content = messages[-2]["content"]
             print(f"DEBUG: UserID {user_id} Conversation already completed. Repeating final message.")
-        else:
+        else: # Should ideally not happen if AI sent completion message.
             reply_content = generate_response(messages)
 
     else:
