@@ -5,50 +5,105 @@
   <title>مساعد التقارير الجنائية</title>
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f4;
-      color: #333;
-      text-align: center;
-      padding: 50px;
-      direction: rtl;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern sans-serif font */
+        background-color: #e6ffe6; /* Light green background */
+        color: #333;
+        text-align: center;
+        padding: 20px; /* Reduced padding slightly */
+        direction: rtl;
+        margin: 0;
+    }
+
+    .container {
+        max-width: 800px; /* Max width for the main content */
+        margin: 0 auto; /* Center the container */
+        padding: 20px;
+        background-color: #ffffff; /* White background for content area */
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        border-radius: 10px;
     }
 
     h2 {
-      color: #2c3e50;
+        color: #004d00; /* Darker green for heading */
+        margin-bottom: 30px;
     }
 
-    button {
-      font-size: 18px;
-      padding: 12px 24px;
-      margin: 10px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+    button { /* General button styling */
+        font-size: 16px; /* Slightly smaller base font size */
+        padding: 12px 28px;
+        margin: 10px 5px; /* Adjusted margin */
+        background-color: #006400; /* Dark green */
+        color: white;
+        border: none;
+        border-radius: 25px; /* More rounded buttons */
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.1s ease; /* Smooth transitions */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow */
     }
-
     button:hover {
-      background-color: #2980b9;
+        background-color: #004d00; /* Darker on hover */
+        transform: translateY(-1px); /* Slight lift on hover */
+    }
+    button:active {
+        transform: translateY(0px); /* Press down effect */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    /* Specific button styling if needed, e.g., for generateBtn */
+    #generateBtn {
+        background-color: #007bff; /* Blue for primary action perhaps */
+    }
+    #generateBtn:hover {
+        background-color: #0056b3;
+    }
+    button:disabled { /* Styling for disabled buttons */
+       background-color: #cccccc;
+       color: #666666;
+       cursor: not-allowed;
+       transform: none;
+       box-shadow: none;
     }
 
     #status {
-      margin-top: 20px;
-      font-size: 20px;
+        margin-top: 25px;
+        font-size: 18px; /* Slightly smaller */
+        color: #333;
+        padding: 10px;
+        border-radius: 5px;
+        min-height: 30px; /* Ensure space even if empty */
+        line-height: 1.6;
+    }
+    /* Example: Different status styles (could be applied via JS) */
+    .status-recording { /* Add this class via JS when recording */
+       /* background-color: #fff0f0; Light red */
+       /* color: #d00; */
+    }
+    .status-processing { /* Add this class via JS when processing */
+       /* background-color: #f0f8ff; Light blue */
+       /* color: #0056b3; */
     }
 
     audio {
-      margin-top: 30px;
-      width: 80%;
+        margin-top: 25px;
+        width: 90%; /* Responsive width */
+        max-width: 600px; /* Max width for large screens */
+        display: block; /* Center it */
+        margin-left: auto;
+        margin-right: auto;
     }
   </style>
 </head>
 <body>
-  <h2>🎙️ مساعد إعداد التقارير - قسم الهندسة الجنائية</h2>
-  <button onclick="startRecording()">🎤 اضغط هنا للرد</button>
-  <button id="generateBtn" onclick="generateReport()">📄 إنشاء التقرير</button>
-  <p id="status">👈 اضغط على الزر وابدأ التحدث مع المساعد</p>
-  <audio id="audioPlayback" controls></audio>
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img id="companyLogo" src="YOUR_LOGO_URL_HERE" alt="Company Logo" style="max-width: 150px; max-height: 100px;">
+        <!-- TODO: User needs to replace YOUR_LOGO_URL_HERE with the actual URL/path to the Dubai Police logo -->
+    </div>
+    <h2>🎙️ مساعد إعداد التقارير - قسم الهندسة الجنائية</h2>
+    <button onclick="startRecording()">🎤 اضغط هنا للرد</button>
+    <button id="generateBtn" onclick="generateReport()">📄 إنشاء التقرير</button>
+    <p id="status">👈 اضغط على الزر وابدأ التحدث مع المساعد</p>
+    <audio id="audioPlayback" controls></audio>
+  </div>
 
   <script src="/static/script.js"></script>
 </body>
