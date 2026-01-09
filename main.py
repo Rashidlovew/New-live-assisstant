@@ -27,6 +27,7 @@ field_order = [
     "Examination", "Outcomes", "TechincalOpinion"
 ]
 
+# field_prompts are kept for reference for the AI
 field_prompts = {
     "Date": "🎙️ أرسل تاريخ الواقعة.",
     "Briefing": "🎙️ أرسل موجز الواقعة.",
@@ -38,23 +39,37 @@ field_prompts = {
 
 sessions = {}
 
+# System prompt with polite Arabic acknowledgments
 system_prompt = (
-    "أنتِ مساعد ذكي من قسم الهندسة الجنائية، تتحدثين بصوت بشري طبيعي وبأسلوب مهني ودود ومتعاطف."
-    " وظيفتك هي إجراء محادثة طبيعية لجمع معلومات لتقرير فني. لا تجعلي المستخدم يشعر كأنه يملأ استمارة."
-    " لكل معلومة يقدمها المستخدم (مثلاً عن 'التاريخ')، ابدئي ردك بتأكيد موجز وطبيعي لهذه المعلومة (مثلاً: 'حسنًا، تاريخ الواقعة هو [التاريخ الذي ذكره المستخدم].')."
-    " بعد ذلك، إذا كانت إجابة المستخدم عن الحقل الحالي مختصرة جدًا أو غير واضحة، اطرحي سؤال متابعة مفتوح لتستوضحي أكثر عن نفس الحقل قبل الانتقال لطلب معلومات عن الحقل التالي."
-    " إذا كانت المعلومة واضحة، انتقلي بسلاسة لطلب المعلومة التالية حسب الترتيب المحدد."
-    " استخدمي انتقالات عبورية لطيفة بين المواضيع المختلفة للتقرير."
-    " هدفك هو جمع المعلومات للحقول التالية بالترتيب: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
-    " عندما يتم جمع كل الحقول بنجاح، قومي بتأكيد استلام المعلومة الأخيرة ثم أعلني بشكل واضح عن اكتمال جمع البيانات وأن التقرير سيتم إعداده (مثلاً: 'شكرًا لك، هذه هي كل المعلومات المطلوبة. ✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...')."
-    " تذكري أن تستخدمي هذه التعليمات في كل رد."
+    "أنت مساعد AI متخصص في قسم الهندسة الجنائية. مهمتك هي جمع المعلومات اللازمة لإعداد تقرير فني بكفاءة ومهنية عالية، والتحدث باللغة العربية عند طلب الحقول وتقديم الإقرارات."
+    "ستقوم بطلب المعلومات من المستخدم حقلًا تلو الآخر بالترتيب التالي: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion."
+
+    "**قواعد صارمة للتفاعل:**"
+    "1.  **الطلب الأول:** عندما تبدأ محادثة جديدة (أي عندما تكون رسالتك هي الأولى بعد رسالة النظام ورسالة المستخدم الأولية), يجب أن يكون ردك الأول هو طلب المعلومة الأولى 'Date' باستخدام صياغة عربية واضحة. مثال: 'أنا هنا لمساعدتك في إعداد تقرير الهندسة الجنائية. لنبدأ، يرجى تقديم تاريخ الواقعة.'"
+    "2.  **الإقرار وطلب الحقل التالي:** بعد أن يقدم المستخدم معلومة لأي حقل، يجب أن تبدأ ردك بعبارة إقرار موجزة ومهذبة باللغة العربية. أمثلة على الإقرارات: 'شكراً لك.'، 'شكراً، تم استلام [اسم الحقل الذي تم استلامه باللغة العربية].'، 'معلومة مفيدة، شكراً لك.'، 'حسنًا، تم تسجيل ذلك.'."
+    "    بعد الإقرار مباشرةً، انتقل لطلب الحقل التالي بالترتيب المحدد، مستخدمًا الصياغة العربية المحددة لذلك الحقل."
+    "    مثال كامل (بعد استلام التاريخ): 'شكراً لك على تقديم التاريخ. الآن، يرجى تقديم موجز الواقعة.'"
+    "    مثال آخر (بعد استلام موجز الواقعة): 'شكراً، تم استلام موجز الواقعة. الآن، يرجى تقديم معاينة الموقع.'"
+    "3.  **استخدام اللغة العربية للحقول:** عند طلب أي حقل من المستخدم (المشار إليها داخلياً بالأسماء الإنجليزية: Date, Briefing, LocationObservations, Examination, Outcomes, TechincalOpinion)، يجب أن تستخدم صياغة عربية للسؤال. لا تستخدم الكلمات الإنجليزية لهذه الحقول في أسئلتك الموجهة للمستخدم. يمكنك الاعتماد على المعنى من النصوص العربية المتوفرة في `field_prompts` كمرجع لصياغة أسئلتك باللغة العربية."
+    "    - مثال لطلب حقل 'Date': 'يرجى تقديم تاريخ الواقعة.'"
+    "    - مثال لطلب حقل 'Briefing': 'يرجى تقديم موجز الواقعة.'"
+    "    - مثال لطلب حقل 'LocationObservations': 'يرجى تقديم معاينة الموقع.'"
+    "    - مثال لطلب حقل 'Examination': 'يرجى تقديم نتيجة الفحص الفني.'"
+    "    - مثال لطلب حقل 'Outcomes': 'يرجى تقديم النتيجة.'"
+    "    - مثال لطلب حقل 'TechincalOpinion': 'يرجى تقديم الرأي الفني.'"
+    "4.  **الإيجاز:** يجب أن تكون إقراراتك وأسئلتك موجزة ومباشرة. لا تقم بإضافة أي كلمات إضافية، لا تحيات مطولة، لا تعليقات لا داعي لها، ولا أي نوع من الحوار خارج هذا النمط المحدد والمباشر."
+    "5.  **الوضوح:** إذا كانت إجابة المستخدم غير واضحة أو فارغة، لا تقدم إقرارًا. بدلاً من ذلك، كرر نفس سؤال الحقل الحالي بصيغة عربية واضحة."
+    "6.  **الختام:** بعد أن يقدم المستخدم معلومات حقل 'TechincalOpinion'، وبعد تقديم الإقرار المناسب لهذا الحقل (مثال: 'شكراً، تم استلام الرأي الفني.')، يجب أن يكون ردك الوحيد والأخير بالضبط: '✅ تم استلام جميع البيانات. يتم الآن إعداد التقرير...'"
+    "7.  **الرموز التعبيرية:** لا تستخدم أي رموز emoji إلا في الرسالة النهائية المذكورة أعلاه."
+    "التزم بهذه التعليمات بدقة لضمان عملية جمع بيانات فعالة وواضحة ومهذبة."
 )
+
 
 def generate_response(messages):
     response = openai.chat.completions.create(
         model="gpt-4o",
         messages=messages,
-        temperature=0.6
+        temperature=0.2 # Adjusted temperature for adherence to instructions
     )
     return response.choices[0].message.content
 
@@ -62,25 +77,17 @@ def generate_response(messages):
 def transcribe():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ['.mp3', '.mp4', '.mpeg', '.mpga', '.m4a', '.wav', '.webm', '.ogg']:
         return jsonify({'error': 'Unsupported file type'}), 400
-
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         file.save(tmp.name)
         audio_path = tmp.name
-
     with open(audio_path, "rb") as f:
-        transcript_response = openai.audio.transcriptions.create(
-            model="whisper-1",
-            file=f
-        )
-
+        transcript_response = openai.audio.transcriptions.create(model="whisper-1", file=f)
     os.remove(audio_path)
     return jsonify({"text": transcript_response.text})
 
@@ -94,43 +101,68 @@ def chat():
         sessions[user_id] = {
             "messages": [{"role": "system", "content": system_prompt}],
             "fields": {},
-            "current": 0
+            "current": 0,
+            "chat_state": "collecting_data"
         }
+        if not user_message:
+            user_message = "(بدأ المستخدم المحادثة)"
+        print(f"DEBUG: UserID {user_id} New session. Initial user_message: '{user_message}'. State: {sessions[user_id]['chat_state']}")
 
     session = sessions[user_id]
     messages = session["messages"]
 
+    should_store_data = True
+    if len(messages) == 1:
+        should_store_data = False
+        print(f"DEBUG: UserID {user_id} First effective user interaction. Not storing this message ('{user_message}') as field data.")
+
     messages.append({"role": "user", "content": user_message})
+    reply_content = ""
 
-    if session["current"] < len(field_order):
-        current_field_key = field_order[session["current"]]
-        session["fields"][current_field_key] = user_message
+    if session.get("chat_state") == "collecting_data":
+        print(f"DEBUG: UserID {user_id} In 'collecting_data' state for field index {session['current']}. User message: '{user_message}'")
 
-    reply_content = generate_response(messages)
+        if should_store_data and session["current"] < len(field_order):
+            current_field_key = field_order[session["current"]]
+            session["fields"][current_field_key] = user_message
+            print(f"DEBUG: UserID {user_id} Stored user_message='{user_message}' for field='{current_field_key}' at index={session['current']}")
+        elif not should_store_data:
+            print(f"DEBUG: UserID {user_id} In 'collecting_data' but should_store_data is false. Not storing. This is likely the initial user utterance before AI asks for first field.")
+        else:
+             print(f"DEBUG: UserID {user_id} Warning: In 'collecting_data' but session['current'] ({session['current']}) is out of bounds for storing.")
 
-    # Advance session["current"] if the LLM is expected to have moved on.
-    # The system_prompt guides the LLM to ask for follow-ups on the *same* field if unclear.
-    # If the LLM is satisfied, it moves to the next field or concludes.
-    # We increment `session["current"]` to reflect the next field the user should be providing,
-    # or to mark completion.
-    # This happens *after* the user provides data for the current `session["current"]` index,
-    # and *after* the LLM generates a response based on that.
-    # The new `session["current"]` is what the *next* user message will be for.
+        reply_content = generate_response(messages)
 
-    # Heuristic: if the LLM's reply does not seem to be a clarifying question about the field
-    # we just collected data for, then we can assume it's time to move to the next field index.
-    # For now, we will increment if the current field (before increment) is not the last one.
-    # This relies heavily on the LLM following the prompt to ask for the next field in sequence.
-    if session["current"] < len(field_order) - 1:
-        # We've processed data for field `session["current"]`. If it's not the last field,
-        # the LLM *should* be asking for `session["current"] + 1`. So, update `session["current"]`
-        # to reflect that the *next* user input is for this new index.
-        session["current"] += 1
-    elif session["current"] == len(field_order) - 1:
-        # We've processed data for the *last* field.
-        # The LLM *should* be generating a concluding message.
-        # Increment `session["current"]` to mark that all fields are done.
-        session["current"] += 1 # Now session["current"] == len(field_order)
+        if should_store_data and session["current"] < len(field_order):
+            current_field_key_just_processed = field_order[session["current"]]
+            # Check if data was actually stored for the field we were expecting.
+            # This condition also implies that user_message was not empty/None if it was stored.
+            if current_field_key_just_processed in session["fields"] and \
+               session["fields"].get(current_field_key_just_processed) == user_message and \
+               user_message.strip() != "": # Ensure non-empty message was processed
+
+                if session["current"] < len(field_order) - 1:
+                    session["current"] += 1
+                    print(f"DEBUG: UserID {user_id} Advanced session current to {session['current']} for field {field_order[session['current']]}")
+                elif session["current"] == len(field_order) - 1:
+                    session["current"] += 1
+                    session["chat_state"] = "completed"
+                    print(f"DEBUG: UserID {user_id} All fields processed. session current is now {session['current']}. State: {session['chat_state']}.")
+            else:
+                # If user_message was empty, or data not stored, LLM should re-ask (due to system_prompt rule 5)
+                print(f"DEBUG: UserID {user_id} Data for field {current_field_key_just_processed} not stored, or was empty, or mismatch. Not advancing session['current']. LLM should handle re-asking. User message: '{user_message}'")
+
+    elif session.get("chat_state") == "completed":
+        print(f"DEBUG: UserID {user_id} in 'completed' state. User message: '{user_message}'")
+        if messages[-2]["role"] == "assistant" and messages[-2]["content"].startswith("✅ تم استلام جميع البيانات."):
+            reply_content = messages[-2]["content"]
+            print(f"DEBUG: UserID {user_id} Conversation already completed. Repeating final message.")
+        else: # Should ideally not happen if AI sent completion message.
+            reply_content = generate_response(messages)
+
+    else:
+        print(f"ERROR: UserID {user_id} Unknown chat_state: {session.get('chat_state')}")
+        reply_content = "حدث خطأ غير متوقع في النظام."
 
     messages.append({"role": "assistant", "content": reply_content})
     return jsonify({"reply": reply_content})
@@ -171,23 +203,54 @@ def speak():
 def generate():
     data = request.get_json()
     fields = data.get("fields")
+    print(f"DEBUG: /generate received fields: {fields}")
+
+    if not fields:
+        print("DEBUG: /generate called with no fields data.")
+        fields = {}
 
     doc = Document("police_report_template.docx")
+
+    keys_replaced_in_doc = set()
+
     for paragraph in doc.paragraphs:
         for key, val in fields.items():
-            if f"{{{{{key}}}}}" in paragraph.text:
-                for run in paragraph.runs:
-                    if f"{{{{{key}}}}}" in run.text:
-                        run.text = run.text.replace(f"{{{{{key}}}}}", val)
-                        paragraph.paragraph_format.right_to_left = True
-                        paragraph.alignment = 2
-                        run.font.name = 'Dubai'
-                        run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Dubai')
-                        run.font.size = Pt(13)
+            placeholder = f"{{{{{key}}}}}"
+            if placeholder in paragraph.text:
+                print(f"DEBUG: Placeholder '{placeholder}' found in paragraph: \"{paragraph.text[:100]}...\"")
+
+            for run in paragraph.runs:
+                if placeholder in run.text:
+                    initial_run_text = run.text
+                    replacement_value = str(val) if val is not None else ""
+                    run.text = run.text.replace(placeholder, replacement_value)
+
+                    print(f"DEBUG: Key '{key}': Replaced placeholder in run. Original: '{initial_run_text}', New: '{run.text}'")
+                    keys_replaced_in_doc.add(key)
+
+                    paragraph.paragraph_format.right_to_left = True
+                    paragraph.alignment = 2
+
+                    run.font.name = 'Dubai'
+                    try:
+                        rpr = run._element.get_or_add_rPr()
+                        rFonts = rpr.get_or_add_rFonts()
+                        rFonts.set(qn('w:eastAsia'), 'Dubai')
+                        rFonts.set(qn('w:cs'), 'Dubai')
+                        rFonts.set(qn('w:ascii'), 'Dubai')
+                        rFonts.set(qn('w:hAnsi'), 'Dubai')
+                    except Exception as e:
+                        print(f"DEBUG: Error applying font to run for key '{key}': {e}")
+                    run.font.size = Pt(13)
+
+    for key_in_fields in fields.keys():
+        if key_in_fields not in keys_replaced_in_doc:
+            print(f"DEBUG: Key '{key_in_fields}' (value: '{fields[key_in_fields]}') from input fields was NOT found/replaced in the document. Check template placeholder: {{{{{key_in_fields}}}}}")
 
     output_path = os.path.join(tempfile.gettempdir(), "final_report.docx")
     doc.save(output_path)
-    send_email_with_attachment(output_path)
+    print(f"DEBUG: Report saved to {output_path}")
+    # send_email_with_attachment(output_path)
     return send_file(output_path, as_attachment=True)
 
 def send_email_with_attachment(file_path):
